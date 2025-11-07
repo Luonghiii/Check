@@ -10,8 +10,9 @@
             padding: 0;
             box-sizing: border-box;
         }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -19,40 +20,79 @@
             align-items: center;
             padding: 20px;
         }
+        
         .container {
-            background: rgba(255, 255, 255, 0.95);
+            background: white;
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             max-width: 600px;
             width: 100%;
+            animation: fadeIn 0.5s ease;
         }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         h1 {
             color: #667eea;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             text-align: center;
             font-size: 28px;
         }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
         .input-group {
             margin-bottom: 20px;
         }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
         textarea {
             width: 100%;
-            min-height: 150px;
+            min-height: 120px;
             padding: 15px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             font-size: 14px;
             font-family: monospace;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
             resize: vertical;
         }
+        
         textarea:focus {
             outline: none;
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
         button {
-            width: 100%;
+            flex: 1;
             padding: 15px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -61,29 +101,91 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s;
         }
+        
         button:hover {
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
+        
         button:active {
             transform: translateY(0);
         }
+        
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
+        
+        .clear-btn {
+            background: #e0e0e0;
+            color: #666;
+        }
+        
+        .clear-btn:hover {
+            background: #d0d0d0;
+            box-shadow: none;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #667eea;
+            display: none;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         .result {
             margin-top: 20px;
             padding: 20px;
-            background: #f5f5f5;
+            background: #f5f7fa;
             border-radius: 10px;
             display: none;
         }
+        
         .result.show {
             display: block;
+            animation: slideIn 0.3s ease;
         }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
         .result-item {
             margin-bottom: 10px;
             padding: 12px;
@@ -92,112 +194,150 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            animation: fadeIn 0.5s ease;
         }
+        
         .result-item strong {
             color: #667eea;
             margin-right: 10px;
+            min-width: 80px;
         }
+        
+        .result-value {
+            flex: 1;
+            word-break: break-all;
+            margin-right: 10px;
+        }
+        
         .copy-btn {
-            padding: 5px 15px;
+            padding: 6px 12px;
             background: #667eea;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 12px;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
+        
         .copy-btn:hover {
             background: #764ba2;
         }
-        .loading {
+        
+        .copy-btn.copied {
+            background: #4caf50;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .stat-item {
             text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
             color: #667eea;
-            display: none;
-            margin-top: 20px;
         }
-        .loading.show {
-            display: block;
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
         }
+        
         .note {
             margin-top: 20px;
             padding: 15px;
             background: #fff3cd;
-            border-radius: 10px;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
             font-size: 14px;
             color: #856404;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔗 FB Link to UID Converter</h1>
+        <h1>🔗 Facebook Link to UID</h1>
+        <p class="subtitle">Convert Facebook links to User IDs instantly</p>
+        
         <div class="input-group">
-            <textarea id="fbLinks" placeholder="Nhập link Facebook (mỗi link 1 dòng)...&#10;&#10;Ví dụ:&#10;https://www.facebook.com/username&#10;https://www.facebook.com/profile.php?id=100012345&#10;https://www.facebook.com/share/xxxxx/"></textarea>
+            <label for="fbLinks">📝 Nhập link Facebook (mỗi link 1 dòng):</label>
+            <textarea 
+                id="fbLinks" 
+                placeholder="https://www.facebook.com/zuck&#10;https://www.facebook.com/share/xxxxx/&#10;https://www.facebook.com/profile.php?id=100012345"
+            ></textarea>
         </div>
-        <button onclick="convertLinks()" id="convertBtn">Chuyển đổi</button>
-        <div class="loading" id="loading">⏳ Đang xử lý...</div>
+        
+        <div class="button-group">
+            <button onclick="convertLinks()" id="convertBtn">
+                ⚡ Chuyển đổi
+            </button>
+            <button onclick="clearAll()" class="clear-btn">
+                🗑️ Xóa
+            </button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <span class="spinner"></span>
+            Đang xử lý...
+        </div>
+        
         <div class="result" id="result"></div>
+        
         <div class="note">
-            💡 <strong>Lưu ý:</strong> Tool này sử dụng iframe ẩn để bypass CORS. Hỗ trợ tất cả các loại link Facebook.
+            💡 <strong>Hỗ trợ:</strong> Profile, Page, Group, Share links. Có thể nhập nhiều link cùng lúc!
         </div>
     </div>
 
-    <!-- Iframe ẩn để bypass CORS -->
-    <iframe id="hiddenFrame" style="display:none;"></iframe>
-
     <script>
         let processedResults = [];
+        let totalSuccess = 0;
+        let totalFailed = 0;
 
-        async function getFbUidViaIframe(link) {
-            return new Promise((resolve, reject) => {
-                const iframe = document.getElementById('hiddenFrame');
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                
-                // Tạo script trong iframe
-                const script = iframeDoc.createElement('script');
-                script.textContent = `
-                    (async function() {
-                        try {
-                            const response = await fetch('https://id.traodoisub.com/api.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                    'Accept': 'application/json, text/javascript, */*; q=0.01',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                body: 'link=${encodeURIComponent(link)}'
-                            });
-                            const data = await response.json();
-                            window.parent.postMessage({type: 'fbuid', data: data}, '*');
-                        } catch (error) {
-                            window.parent.postMessage({type: 'fbuid', error: error.message}, '*');
-                        }
-                    })();
-                `;
-                
-                // Listener cho message từ iframe
-                const messageHandler = (event) => {
-                    if (event.data.type === 'fbuid') {
-                        window.removeEventListener('message', messageHandler);
-                        if (event.data.error) {
-                            reject(new Error(event.data.error));
-                        } else {
-                            resolve(event.data.data);
-                        }
-                    }
-                };
-                
-                window.addEventListener('message', messageHandler);
-                
-                // Inject script vào iframe
-                iframeDoc.body.appendChild(script);
-                
-                // Timeout sau 10s
-                setTimeout(() => {
-                    window.removeEventListener('message', messageHandler);
-                    reject(new Error('Timeout'));
-                }, 10000);
+        async function getUID(link) {
+            const response = await fetch('https://api-beta-app.vercel.app/api/getUID', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ link })
             });
+            return await response.json();
         }
 
         async function convertLinks() {
@@ -207,7 +347,7 @@
             const convertBtn = document.getElementById('convertBtn');
             
             if (!linksText) {
-                alert('Vui lòng nhập link Facebook!');
+                alert('⚠️ Vui lòng nhập link Facebook!');
                 return;
             }
             
@@ -217,57 +357,111 @@
             resultDiv.classList.remove('show');
             convertBtn.disabled = true;
             processedResults = [];
+            totalSuccess = 0;
+            totalFailed = 0;
             
-            let html = '<h3 style="margin-bottom: 15px; color: #667eea;">Kết quả:</h3>';
+            let html = '<h3>📊 Kết quả chuyển đổi:</h3>';
             
             for (let i = 0; i < links.length; i++) {
                 const link = links[i].trim();
+                
+                html += `<div class="result-item" id="item-${i}" style="opacity: 0.5;">
+                    <span>⏳ Đang xử lý link ${i + 1}...</span>
+                </div>`;
+                resultDiv.innerHTML = html;
+                resultDiv.classList.add('show');
+                
                 try {
-                    html += `<div class="result-item" style="opacity: 0.5;">⏳ Đang xử lý link ${i + 1}...</div>`;
-                    resultDiv.innerHTML = html;
-                    resultDiv.classList.add('show');
-                    
-                    const data = await getFbUidViaIframe(link);
+                    const data = await getUID(link);
                     
                     if (data.success === 200) {
+                        totalSuccess++;
                         processedResults.push(data);
-                        html = html.replace(`⏳ Đang xử lý link ${i + 1}...`, 
-                            `<strong>UID:</strong> ${data.id} | <strong>Tên:</strong> ${data.name}
-                            <button class="copy-btn" onclick="copyToClipboard('${data.id}')">Copy UID</button>`
-                        ).replace('opacity: 0.5', 'opacity: 1');
-                        resultDiv.innerHTML = html;
+                        
+                        document.getElementById(`item-${i}`).outerHTML = `
+                            <div class="result-item" style="animation: fadeIn 0.5s ease;">
+                                <div class="result-value">
+                                    <strong>UID:</strong> ${data.id}<br>
+                                    <strong>Tên:</strong> ${data.name || 'N/A'}
+                                </div>
+                                <button class="copy-btn" onclick="copyToClipboard('${data.id}', this)">
+                                    📋 Copy
+                                </button>
+                            </div>
+                        `;
                     } else {
-                        html = html.replace(`⏳ Đang xử lý link ${i + 1}...`, 
-                            `❌ Không thể lấy UID từ link này`
-                        ).replace('opacity: 0.5', 'opacity: 1');
-                        resultDiv.innerHTML = html;
+                        totalFailed++;
+                        document.getElementById(`item-${i}`).outerHTML = `
+                            <div class="result-item" style="animation: fadeIn 0.5s ease; background: #fee;">
+                                <span>❌ Không thể lấy UID từ link này</span>
+                            </div>
+                        `;
                     }
                     
-                    // Delay giữa các request
+                    // Delay giữa các request để tránh rate limit
                     if (i < links.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        await new Promise(resolve => setTimeout(resolve, 800));
                     }
                 } catch (error) {
+                    totalFailed++;
                     console.error('Error:', error);
-                    html = html.replace(`⏳ Đang xử lý link ${i + 1}...`, 
-                        `❌ Lỗi: ${error.message}`
-                    ).replace('opacity: 0.5', 'opacity: 1');
-                    resultDiv.innerHTML = html;
+                    document.getElementById(`item-${i}`).outerHTML = `
+                        <div class="result-item" style="animation: fadeIn 0.5s ease; background: #fee;">
+                            <span>❌ Lỗi: ${error.message}</span>
+                        </div>
+                    `;
                 }
             }
+            
+            // Thêm thống kê
+            html = resultDiv.innerHTML;
+            html += `
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value">${totalSuccess}</div>
+                        <div class="stat-label">✅ Thành công</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${totalFailed}</div>
+                        <div class="stat-label">❌ Thất bại</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${links.length}</div>
+                        <div class="stat-label">📝 Tổng số</div>
+                    </div>
+                </div>
+            `;
+            resultDiv.innerHTML = html;
             
             loading.classList.remove('show');
             convertBtn.disabled = false;
         }
 
-        function copyToClipboard(text) {
+        function copyToClipboard(text, button) {
             navigator.clipboard.writeText(text).then(() => {
-                alert('Đã copy UID: ' + text);
+                const originalText = button.innerHTML;
+                button.innerHTML = '✓ Copied!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                alert('Không thể copy: ' + err);
             });
         }
+
+        function clearAll() {
+            document.getElementById('fbLinks').value = '';
+            document.getElementById('result').classList.remove('show');
+            processedResults = [];
+            totalSuccess = 0;
+            totalFailed = 0;
+        }
         
-        // Enter để submit
-        document.getElementById('fbLinks').addEventListener('keypress', function(e) {
+        // Ctrl+Enter để submit
+        document.getElementById('fbLinks').addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'Enter') {
                 convertLinks();
             }
