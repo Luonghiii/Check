@@ -5,154 +5,115 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YouTube Downloader</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 50px auto;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
       padding: 20px;
     }
     
-    input {
-      width: 100%;
-      padding: 12px;
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 24px;
+    }
+    
+    .video-info {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .video-info h3 {
       font-size: 16px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      margin-bottom: 15px;
-    }
-    
-    button {
-      width: 100%;
-      padding: 15px;
-      background: #ff0000;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    
-    button:hover {
-      background: #cc0000;
-    }
-    
-    .downloads {
-      margin-top: 30px;
-    }
-    
-    .download-item {
-      background: #f5f5f5;
-      padding: 15px;
-      border-radius: 8px;
       margin-bottom: 10px;
+      color: #333;
+    }
+    
+    .video-info p {
+      color: #666;
+      font-size: 14px;
     }
     
     .download-btn {
-      background: #4CAF50;
-      padding: 10px 20px;
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 12px;
       text-decoration: none;
-      border-radius: 5px;
-      display: inline-block;
-      margin-top: 10px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
     
-    .loading {
-      text-align: center;
-      padding: 20px;
-      display: none;
+    .download-btn:active {
+      transform: scale(0.98);
+    }
+    
+    .download-btn:hover {
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .note {
+      background: #e7f3ff;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #2196F3;
+      font-size: 14px;
+      color: #014361;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>🎥 YouTube Downloader</h1>
-  
-  <input type="text" id="youtubeUrl" placeholder="Dán link YouTube vào đây...">
-  <button onclick="fetchVideo()">Lấy link tải</button>
-  
-  <div class="loading" id="loading">
-    <p>⏳ Đang xử lý...</p>
-  </div>
-  
-  <div class="downloads" id="downloads"></div>
-
-  <script>
-    async function fetchVideo() {
-      const url = document.getElementById('youtubeUrl').value;
-      if (!url) {
-        alert('Vui lòng nhập link YouTube!');
-        return;
-      }
-      
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('downloads').innerHTML = '';
-      
-      try {
-        // Sử dụng API của cậu để lấy thông tin video
-        const apiUrl = `https://api-beta-app.vercel.app/api/youtube/download?url=${encodeURIComponent(url)}`;
-        
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        
-        if (data.success && data.data.formats) {
-          displayDownloads(data.data);
-        } else {
-          alert('Không thể lấy thông tin video!');
-        }
-      } catch (error) {
-        alert('Lỗi: ' + error.message);
-      } finally {
-        document.getElementById('loading').style.display = 'none';
-      }
-    }
+  <div class="container">
+    <h1>🎥 YouTube Video Downloader</h1>
     
-    function displayDownloads(videoData) {
-      const downloadsDiv = document.getElementById('downloads');
-      let html = `
-        <div class="download-item">
-          <h3>${videoData.title}</h3>
-          <p>⏱️ ${Math.floor(videoData.duration / 60)}:${(videoData.duration % 60).toString().padStart(2, '0')}</p>
-        </div>
-      `;
-      
-      // Lọc video có audio
-      const videoWithAudio = videoData.formats.filter(f => f.type === 'video_with_audio');
-      
-      if (videoWithAudio.length > 0) {
-        html += '<h3>📥 Video có âm thanh:</h3>';
-        videoWithAudio.forEach(video => {
-          const proxyUrl = `https://api-beta-app.vercel.app/api/getlink?url=${encodeURIComponent(video.url)}`;
-          html += `
-            <div class="download-item">
-              <strong>${video.quality}</strong>
-              <a href="${proxyUrl}" class="download-btn" download="${videoData.title}.${video.extension}">
-                Tải xuống
-              </a>
-            </div>
-          `;
-        });
-      }
-      
-      // Các chất lượng khác
-      const otherVideos = videoData.formats.filter(f => f.type === 'video');
-      if (otherVideos.length > 0) {
-        html += '<h3>📹 Chất lượng khác (không có âm thanh):</h3>';
-        otherVideos.slice(0, 3).forEach(video => {
-          const proxyUrl = `https://api-beta-app.vercel.app/api/getlink?url=${encodeURIComponent(video.url)}`;
-          html += `
-            <div class="download-item">
-              <strong>${video.quality}</strong>
-              <a href="${proxyUrl}" class="download-btn" download="${videoData.title}.${video.extension}">
-                Tải xuống
-              </a>
-            </div>
-          `;
-        });
-      }
-      
-      downloadsDiv.innerHTML = html;
-    }
-  </script>
+    <div class="video-info">
+      <h3>Mr.Gold (Chú chó Tam) lên sóng truyền hình</h3>
+      <p>⏱️ Thời lượng: 10 phút 45 giây</p>
+    </div>
+
+    <!-- Dùng thẻ <a> trỏ đến API proxy -->
+    <a href="https://api-beta-app.vercel.app/api/getlink?url=https%3A%2F%2Fredirector.googlevideo.com%2Fvideoplayback%3Fexpire%3D1762684912%26ei%3DkBsQaaAtgbbp2w-D_YvIDQ%26ip%3D176.1.192.37%26id%3Do-AAY2-86twxNid_hB9VLIJZx9AiDJPCwf18NF3WosBR9F%26itag%3D18%26source%3Dyoutube%26requiressl%3Dyes%26xpc%3DEgVo2aDSNQ%253D%253D%26met%3D1762663312%252C%26mh%3D7B%26mm%3D31%252C29%26mn%3Dsn-uxax4vopj5qx-q0n6%252Csn-4g5e6nsr%26ms%3Dau%252Crdu%26mv%3Dm%26mvi%3D3%26pl%3D22%26rms%3Dau%252Cau%26initcwndbps%3D2116250%26bui%3DAdEuB5RGXd6F7xljiXOcsLgN0DLniCRPfm6tMYyPlQmxoWVvjbNAGAWl8hYj1VcObbiVTI7-DAeaEFF-%26spc%3D6b0G_N3CJmLlmdChwHbF%26vprv%3D1%26svpuc%3D1%26mime%3Dvideo%252Fmp4%26rqh%3D1%26gir%3Dyes%26clen%3D35730507%26ratebypass%3Dyes%26dur%3D645.654%26lmt%3D1762329235149006%26mt%3D1762662777%26fvip%3D5%26fexp%3D51552689%252C51565115%252C51565682%252C51580968%26c%3DANDROID%26txp%3D5538534%26sparams%3Dexpire%252Cei%252Cip%252Cid%252Citag%252Csource%252Crequiressl%252Cxpc%252Cbui%252Cspc%252Cvprv%252Csvpuc%252Cmime%252Crqh%252Cgir%252Cclen%252Cratebypass%252Cdur%252Clmt%26sig%3DAJfQdSswRgIhAIn9giPbnN_TldtNQ1-lcUFYg0euwvY3M2fj8-jg9HCyAiEA0amD7fKgbuOQ_kx75a_g2ibO-Skz23k_KnOJcyAFYeU%253D%26lsparams%3Dmet%252Cmh%252Cmm%252Cmn%252Cms%252Cmv%252Cmvi%252Cpl%252Crms%252Cinitcwndbps%26lsig%3DAPaTxxMwRgIhANFWwR9SIrIwbQbpgc_SuRvSPO6778xvtXmF9SGPBIUUAiEAkuLbmSzhjMNrmrTOnEPlyPEyBz4hYFwVK0oDZ8pYShU%253D" 
+       class="download-btn" 
+       download="Mr_Gold_360p.mp4">
+      📥 Tải 360p (có âm thanh) - 35.7MB
+    </a>
+    
+    <a href="https://api-beta-app.vercel.app/api/getlink?url=https%3A%2F%2Fredirector.googlevideo.com%2Fvideoplayback%3Fexpire%3D1762684912%26ei%3DkBsQaaAtgbbp2w-D_YvIDQ%26ip%3D176.1.192.37%26id%3Do-AAY2-86twxNid_hB9VLIJZx9AiDJPCwf18NF3WosBR9F%26itag%3D136%26source%3Dyoutube%26requiressl%3Dyes%26xpc%3DEgVo2aDSNQ%253D%253D%26met%3D1762663312%252C%26mh%3D7B%26mm%3D31%252C29%26mn%3Dsn-uxax4vopj5qx-q0n6%252Csn-4g5e6nsr%26ms%3Dau%252Crdu%26mv%3Dm%26mvi%3D3%26pl%3D22%26rms%3Dau%252Cau%26initcwndbps%3D2116250%26bui%3DAdEuB5Rhy7RCp_kiwKQbu4I6_yLIUvSfLVKEsmaEK3vF26btmeyLjEXvImpxp5h67LxjQd_vdT-aEjHX%26spc%3D6b0G_KXDjmLt%26vprv%3D1%26svpuc%3D1%26mime%3Dvideo%252Fmp4%26rqh%3D1%26gir%3Dyes%26clen%3D27919224%26dur%3D645.599%26lmt%3D1762332886976296%26mt%3D1762662777%26fvip%3D5%26keepalive%3Dyes%26fexp%3D51552689%252C51565115%252C51565682%252C51580968%26c%3DANDROID%26txp%3D5535534%26sparams%3Dexpire%252Cei%252Cip%252Cid%252Citag%252Csource%252Crequiressl%252Cxpc%252Cbui%252Cspc%252Cvprv%252Csvpuc%252Cmime%252Crqh%252Cgir%252Cclen%252Cdur%252Clmt%26sig%3DAJfQdSswRgIhAOeHmzx1W-zqQmmfmqZ_R1S-hWIQpy11HYw1qJFTzWUZAiEAmB7H2dIxG1eofJtmM6SB_f9_GB1ZBMgnLTWrRbU1E68%253D%26lsparams%3Dmet%252Cmh%252Cmm%252Cmn%252Cms%252Cmv%252Cmvi%252Cpl%252Crms%252Cinitcwndbps%26lsig%3DAPaTxxMwRgIhANFWwR9SIrIwbQbpgc_SuRvSPO6778xvtXmF9SGPBIUUAiEAkuLbmSzhjMNrmrTOnEPlyPEyBz4hYFwVK0oDZ8pYShU%253D" 
+       class="download-btn"
+       download="Mr_Gold_720p.mp4">
+      📥 Tải 720p (không âm thanh) - 27.9MB
+    </a>
+    
+    <div class="note">
+      <strong>📱 Trên iPhone/iPad:</strong><br>
+      Chỉ cần nhấn vào nút là video sẽ tự động tải về!
+    </div>
+  </div>
 </body>
 </html>
