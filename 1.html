@@ -2,21 +2,64 @@
 <html>
 <head>
   <title>Download Video</title>
+  <style>
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      background: #ff0000;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #cc0000;
+    }
+    #progress {
+      margin-top: 20px;
+      display: none;
+    }
+  </style>
 </head>
 <body>
   <h2>YouTube Video Downloader</h2>
-  <button onclick="downloadVideo()">📥 Tải video 720p</button>
+  <button onclick="downloadVideo()">📥 Tải video 720p (27.9MB)</button>
+  
+  <div id="progress">
+    <p>Đang tải... <span id="percent">0%</span></p>
+    <progress id="progressBar" value="0" max="100" style="width: 100%;"></progress>
+  </div>
 
   <script>
-    function downloadVideo() {
+    async function downloadVideo() {
       const videoUrl = 'https://redirector.googlevideo.com/videoplayback?expire=1762684912&ei=kBsQaaAtgbbp2w-D_YvIDQ&ip=176.1.192.37&id=o-AAY2-86twxNid_hB9VLIJZx9AiDJPCwf18NF3WosBR9F&itag=136&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1762663312%2C&mh=7B&mm=31%2C29&mn=sn-uxax4vopj5qx-q0n6%2Csn-4g5e6nsr&ms=au%2Crdu&mv=m&mvi=3&pl=22&rms=au%2Cau&initcwndbps=2116250&bui=AdEuB5Rhy7RCp_kiwKQbu4I6_yLIUvSfLVKEsmaEK3vF26btmeyLjEXvImpxp5h67LxjQd_vdT-aEjHX&spc=6b0G_KXDjmLt&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=27919224&dur=645.599&lmt=1762332886976296&mt=1762662777&fvip=5&keepalive=yes&fexp=51552689%2C51565115%2C51565682%2C51580968&c=ANDROID&txp=5535534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJfQdSswRgIhAOeHmzx1W-zqQmmfmqZ_R1S-hWIQpy11HYw1qJFTzWUZAiEAmB7H2dIxG1eofJtmM6SB_f9_GB1ZBMgnLTWrRbU1E68%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhANFWwR9SIrIwbQbpgc_SuRvSPO6778xvtXmF9SGPBIUUAiEAkuLbmSzhjMNrmrTOnEPlyPEyBz4hYFwVK0oDZ8pYShU%3D';
       
-      const a = document.createElement('a');
-      a.href = videoUrl;
-      a.download = 'Mr_Gold_720p.mp4'; // Tên file khi tải về
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      document.getElementById('progress').style.display = 'block';
+      
+      try {
+        const response = await fetch(videoUrl);
+        const blob = await response.blob();
+        
+        // Tạo URL tạm từ blob
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        // Tạo thẻ <a> để tải về
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = 'Mr_Gold_720p.mp4';
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+        
+        document.getElementById('progress').style.display = 'none';
+        alert('✅ Tải xong!');
+      } catch (error) {
+        alert('❌ Lỗi: ' + error.message);
+        document.getElementById('progress').style.display = 'none';
+      }
     }
   </script>
 </body>
