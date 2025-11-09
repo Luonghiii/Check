@@ -2,66 +2,118 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YouTube Downloader</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 50px auto;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
       padding: 20px;
+    }
+    
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
       text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 24px;
     }
+    
     .video-info {
-      background: #f5f5f5;
+      background: #f8f9fa;
       padding: 20px;
-      border-radius: 10px;
-      margin: 20px 0;
+      border-radius: 12px;
+      margin-bottom: 20px;
     }
-    .download-links a {
+    
+    .video-info h3 {
+      font-size: 16px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    
+    .video-info p {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .download-btn {
       display: block;
-      margin: 10px 0;
-      padding: 12px 20px;
-      background: #ff0000;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 12px;
       text-decoration: none;
-      border-radius: 5px;
-      transition: 0.3s;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .download-links a:hover {
-      background: #cc0000;
+    
+    .download-btn:active {
+      transform: scale(0.98);
     }
-    .instruction {
-      background: #fff3cd;
+    
+    .download-btn:hover {
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .note {
+      background: #e7f3ff;
       padding: 15px;
-      border-radius: 5px;
+      border-radius: 8px;
+      border-left: 4px solid #2196F3;
+      font-size: 14px;
+      color: #014361;
       margin-top: 20px;
-      border-left: 4px solid #ffc107;
     }
   </style>
 </head>
 <body>
-  <h1>🎥 YouTube Video Downloader</h1>
-  
-  <div class="video-info">
-    <h3>Mr.Gold (Chú chó Tam) lên sóng truyền hình</h3>
-    <p>⏱️ Thời lượng: 10:45</p>
-  </div>
+  <div class="container">
+    <h1>🎥 YouTube Video Downloader</h1>
+    
+    <div class="video-info">
+      <h3>Mr.Gold (Chú chó Tam) lên sóng truyền hình</h3>
+      <p>⏱️ Thời lượng: 10 phút 45 giây</p>
+    </div>
 
-  <div class="download-links">
-    <a href="https://redirector.googlevideo.com/videoplayback?expire=1762684912&ei=kBsQaaAtgbbp2w-D_YvIDQ&ip=176.1.192.37&id=o-AAY2-86twxNid_hB9VLIJZx9AiDJPCwf18NF3WosBR9F&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1762663312%2C&mh=7B&mm=31%2C29&mn=sn-uxax4vopj5qx-q0n6%2Csn-4g5e6nsr&ms=au%2Crdu&mv=m&mvi=3&pl=22&rms=au%2Cau&initcwndbps=2116250&bui=AdEuB5RGXd6F7xljiXOcsLgN0DLniCRPfm6tMYyPlQmxoWVvjbNAGAWl8hYj1VcObbiVTI7-DAeaEFF-&spc=6b0G_N3CJmLlmdChwHbF&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=35730507&ratebypass=yes&dur=645.654&lmt=1762329235149006&mt=1762662777&fvip=5&fexp=51552689%2C51565115%2C51565682%2C51580968&c=ANDROID&txp=5538534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cratebypass%2Cdur%2Clmt&sig=AJfQdSswRgIhAIn9giPbnN_TldtNQ1-lcUFYg0euwvY3M2fj8-jg9HCyAiEA0amD7fKgbuOQ_kx75a_g2ibO-Skz23k_KnOJcyAFYeU%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhANFWwR9SIrIwbQbpgc_SuRvSPO6778xvtXmF9SGPBIUUAiEAkuLbmSzhjMNrmrTOnEPlyPEyBz4hYFwVK0oDZ8pYShU%3D" download="video_360p.mp4">
-      📥 360p (có âm thanh) - 35.7MB
+    <!-- Dùng thẻ <a> trỏ đến API proxy -->
+    <a href="https://api-beta-app.vercel.app/api/getlink?url=https%3A%2F%2Fredirector.googlevideo.com%2Fvideoplayback%3Fexpire%3D1762684912%26ei%3DkBsQaaAtgbbp2w-D_YvIDQ%26ip%3D176.1.192.37%26id%3Do-AAY2-86twxNid_hB9VLIJZx9AiDJPCwf18NF3WosBR9F%26itag%3D18%26source%3Dyoutube%26requiressl%3Dyes%26xpc%3DEgVo2aDSNQ%253D%253D%26met%3D1762663312%252C%26mh%3D7B%26mm%3D31%252C29%26mn%3Dsn-uxax4vopj5qx-q0n6%252Csn-4g5e6nsr%26ms%3Dau%252Crdu%26mv%3Dm%26mvi%3D3%26pl%3D22%26rms%3Dau%252Cau%26initcwndbps%3D2116250%26bui%3DAdEuB5RGXd6F7xljiXOcsLgN0DLniCRPfm6tMYyPlQmxoWVvjbNAGAWl8hYj1VcObbiVTI7-DAeaEFF-%26spc%3D6b0G_N3CJmLlmdChwHbF%26vprv%3D1%26svpuc%3D1%26mime%3Dvideo%252Fmp4%26rqh%3D1%26gir%3Dyes%26clen%3D35730507%26ratebypass%3Dyes%26dur%3D645.654%26lmt%3D1762329235149006%26mt%3D1762662777%26fvip%3D5%26fexp%3D51552689%252C51565115%252C51565682%252C51580968%26c%3DANDROID%26txp%3D5538534%26sparams%3Dexpire%252Cei%252Cip%252Cid%252Citag%252Csource%252Crequiressl%252Cxpc%252Cbui%252Cspc%252Cvprv%252Csvpuc%252Cmime%252Crqh%252Cgir%252Cclen%252Cratebypass%252Cdur%252Clmt%26sig%3DAJfQdSswRgIhAIn9giPbnN_TldtNQ1-lcUFYg0euwvY3M2fj8-jg9HCyAiEA0amD7fKgbuOQ_kx75a_g2ibO-Skz23k_KnOJcyAFYeU%253D%26lsparams%3Dmet%252Cmh%252Cmm%252Cmn%252Cms%252Cmv%252Cmvi%252Cpl%252Crms%252Cinitcwndbps%26lsig%3DAPaTxxMwRgIhANFWwR9SIrIwbQbpgc_SuRvSPO6778xvtXmF9SGPBIUUAiEAkuLbmSzhjMNrmrTOnEPlyPEyBz4hYFwVK0oDZ8pYShU%253D" 
+       class="download-btn" 
+       download="Mr_Gold_360p.mp4">
+      📥 Tải 360p (có âm thanh) - 35.7MB
     </a>
     
-    <a href="https://redirector.googlevideo.com/videoplayback?expire=1762684912&ei=kBsQaaAtgbbp2w-D_YvIDQ&ip=176.1.192.37&id=o-AAY2-86twxNid_hB9VLIJZx9AiDJPCwf18NF3WosBR9F&itag=136&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1762663312%2C&mh=7B&mm=31%2C29&mn=sn-uxax4vopj5qx-q0n6%2Csn-4g5e6nsr&ms=au%2Crdu&mv=m&mvi=3&pl=22&rms=au%2Cau&initcwndbps=2116250&bui=AdEuB5Rhy7RCp_kiwKQbu4I6_yLIUvSfLVKEsmaEK3vF26btmeyLjEXvImpxp5h67LxjQd_vdT-aEjHX&spc=6b0G_KXDjmLt&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=27919224&dur=645.599&lmt=1762332886976296&mt=1762662777&fvip=5&keepalive=yes&fexp=51552689%2C51565115%2C51565682%2C51580968&c=ANDROID&txp=5535534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJfQdSswRgIhAOeHmzx1W-zqQmmfmqZ_R1S-hWIQpy11HYw1qJFTzWUZAiEAmB7H2dIxG1eofJtmM6SB_f9_GB1ZBMgnLTWrRbU1E68%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhANFWwR9SIrIwbQbpgc_SuRvSPO6778xvtXmF9SGPBIUUAiEAkuLbmSzhjMNrmrTOnEPlyPEyBz4hYFwVK0oDZ8pYShU%3D" download="video_720p.mp4">
-      📥 720p (không có âm thanh) - 27.9MB
+    <a href="https://api-beta-app.vercel.app/api/getlink?url=https%3A%2F%2Fredirector.googlevideo.com%2Fvideoplayback%3Fexpire%3D1762684912%26ei%3DkBsQaaAtgbbp2w-D_YvIDQ%26ip%3D176.1.192.37%26id%3Do-AAY2-86twxNid_hB9VLIJZx9AiDJPCwf18NF3WosBR9F%26itag%3D136%26source%3Dyoutube%26requiressl%3Dyes%26xpc%3DEgVo2aDSNQ%253D%253D%26met%3D1762663312%252C%26mh%3D7B%26mm%3D31%252C29%26mn%3Dsn-uxax4vopj5qx-q0n6%252Csn-4g5e6nsr%26ms%3Dau%252Crdu%26mv%3Dm%26mvi%3D3%26pl%3D22%26rms%3Dau%252Cau%26initcwndbps%3D2116250%26bui%3DAdEuB5Rhy7RCp_kiwKQbu4I6_yLIUvSfLVKEsmaEK3vF26btmeyLjEXvImpxp5h67LxjQd_vdT-aEjHX%26spc%3D6b0G_KXDjmLt%26vprv%3D1%26svpuc%3D1%26mime%3Dvideo%252Fmp4%26rqh%3D1%26gir%3Dyes%26clen%3D27919224%26dur%3D645.599%26lmt%3D1762332886976296%26mt%3D1762662777%26fvip%3D5%26keepalive%3Dyes%26fexp%3D51552689%252C51565115%252C51565682%252C51580968%26c%3DANDROID%26txp%3D5535534%26sparams%3Dexpire%252Cei%252Cip%252Cid%252Citag%252Csource%252Crequiressl%252Cxpc%252Cbui%252Cspc%252Cvprv%252Csvpuc%252Cmime%252Crqh%252Cgir%252Cclen%252Cdur%252Clmt%26sig%3DAJfQdSswRgIhAOeHmzx1W-zqQmmfmqZ_R1S-hWIQpy11HYw1qJFTzWUZAiEAmB7H2dIxG1eofJtmM6SB_f9_GB1ZBMgnLTWrRbU1E68%253D%26lsparams%3Dmet%252Cmh%252Cmm%252Cmn%252Cms%252Cmv%252Cmvi%252Cpl%252Crms%252Cinitcwndbps%26lsig%3DAPaTxxMwRgIhANFWwR9SIrIwbQbpgc_SuRvSPO6778xvtXmF9SGPBIUUAiEAkuLbmSzhjMNrmrTOnEPlyPEyBz4hYFwVK0oDZ8pYShU%253D" 
+       class="download-btn"
+       download="Mr_Gold_720p.mp4">
+      📥 Tải 720p (không âm thanh) - 27.9MB
     </a>
-  </div>
-
-  <div class="instruction">
-    <strong>⚠️ Hướng dẫn:</strong><br>
-    • Trên PC: Click chuột phải vào nút → "Save link as..."<br>
-    • Trên Mobile: Giữ nút một lúc → "Download link"<br>
-    • Hoặc click trực tiếp (một số trình duyệt sẽ tự động tải)
+    
+    <div class="note">
+      <strong>📱 Trên iPhone/iPad:</strong><br>
+      Chỉ cần nhấn vào nút là video sẽ tự động tải về!
+    </div>
   </div>
 </body>
 </html>
