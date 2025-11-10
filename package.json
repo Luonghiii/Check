@@ -1,0 +1,20 @@
+{
+  "name": "tiktok-api",
+  "version": "1.0.0",
+  "description": "TikTok Video Info API",
+  "main": "api/tiktok.js",
+  "engines": {
+    "node": ">=14.x"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "tiktok",
+    "api",
+    "video"
+  ],
+  "author": "",
+  "license": "MIT"
+}
