@@ -1,20 +1,29 @@
 {
-  "name": "tiktok-api",
+  "name": "tiktok-profile-checker",
   "version": "1.0.0",
-  "description": "TikTok Video Info API",
-  "main": "api/tiktok.js",
-  "engines": {
-    "node": ">=14.x"
-  },
+  "description": "Advanced TikTok Profile Analytics Tool - Check any TikTok profile with detailed insights",
+  "main": "api/check.js",
   "scripts": {
     "dev": "vercel dev",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "test": "node test.js"
   },
   "keywords": [
     "tiktok",
+    "profile",
+    "checker",
+    "analytics",
+    "scraper",
     "api",
-    "video"
+    "vercel"
   ],
-  "author": "",
-  "license": "MIT"
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/tiktok-checker"
+  }
 }
