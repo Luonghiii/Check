@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test FULL 19 Fields - Facebook Graph API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .info-box {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+        .fields-list {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .result {
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .field-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: #f8f9ff;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+        .field-label {
+            font-weight: bold;
+            color: #667eea;
+            display: inline-block;
+            min-width: 200px;
+        }
+        .field-value {
+            color: #333;
+        }
+        .field-status {
+            float: right;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-success {
+            background: #28a745;
+            color: white;
+        }
+        .status-null {
+            background: #ffc107;
+            color: #333;
+        }
+        .raw-json {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .raw-json pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .copy-btn {
+            background: #28a745;
+            padding: 8px 20px;
+            font-size: 14px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Test FULL 19 Fields</h1>
+            <p>Kiểm tra đầy đủ tất cả fields của Facebook Graph API</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <strong>🆔 Facebook ID:</strong> 100046707224598<br>
+                <strong>👤 Name:</strong> Nguyễn Xuân Đức Lương<br>
+                <strong>📱 Zalo:</strong> 0916508081
+            </div>
+
+            <h3 style="color: #667eea; margin: 20px 0;">📋 Fields sẽ test (19 fields):</h3>
+            <div class="fields-list">id, name, first_name, middle_name, last_name, link, 
+picture, about, birthday, hometown, location, 
+relationship_status, work, education, website, 
+subscribers, updated_time, timezone</div>
+
+            <button class="btn" id="testBtn" onclick="testFullFields()">
+                🚀 Test Tất Cả Fields
+            </button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Đang lấy dữ liệu từ Facebook Graph API...</p>
+            </div>
+            
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const userId = '100046707224598';
+        const token = 'EAAAAUaZA8jlABP7uLEulbTdDbKKek2L4Q2vtq82w39gZCqEctOnVRVjuzdMGeO0HEJIWj10gu1qkj4ZAukdV3UDOcng0tGTlUpOvWuEjpfMKodMbgCC2WCeaEYkk3CNOhYWkZAszmu31Dxq3UZBy15cjCuj2Qq9ZA6glwm8Iizi4Vqwzzvl5dFcf5HammphLpfoBlisDx159Ctol9QAvxs5fjipss7bHRoPiYIuUKAvanr70Hg562JDkq2R2Moa0SsyBa2Wx67x47mugZDZD';
+
+        // TẤT CẢ 19 fields
+        const fields = 'id,name,first_name,middle_name,last_name,link,picture.width(400).height(400),about,birthday,hometown,location,relationship_status,work,education,website,subscribers.limit(0),updated_time,timezone';
+
+        async function testFullFields() {
+            const loadingEl = document.getElementById('loading');
+            const resultEl = document.getElementById('result');
+            const btnEl = document.getElementById('testBtn');
+            
+            loadingEl.style.display = 'block';
+            resultEl.style.display = 'none';
+            btnEl.disabled = true;
+            
+            try {
+                const apiUrl = `https://graph.facebook.com/${userId}?fields=${fields}&access_token=${token}`;
+                
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                loadingEl.style.display = 'none';
+                resultEl.style.display = 'block';
+                btnEl.disabled = false;
+                
+                if (data.error) {
+                    displayError(data.error);
+                } else {
+                    displaySuccess(data);
+                }
+                
+            } catch (error) {
+                loadingEl.style.display = 'none';
+                resultEl.style.display = 'block';
+                btnEl.disabled = false;
+                displayNetworkError(error);
+            }
+        }
+        
+        function displaySuccess(data) {
+            const resultEl = document.getElementById('result');
+            
+            // Kiểm tra từng field
+            const fieldChecks = [
+                { key: 'id', label: '🆔 ID', value: data.id },
+                { key: 'name', label: '👤 Tên đầy đủ', value: data.name },
+                { key: 'first_name', label: '👤 Tên', value: data.first_name },
+                { key: 'middle_name', label: '👤 Tên đệm', value: data.middle_name },
+                { key: 'last_name', label: '👤 Họ', value: data.last_name },
+                { key: 'link', label: '🔗 Link Profile', value: data.link },
+                { key: 'picture', label: '🖼️ Ảnh đại diện', value: data.picture?.data?.url },
+                { key: 'about', label: '💬 Giới thiệu', value: data.about },
+                { key: 'birthday', label: '🎂 Ngày sinh', value: data.birthday },
+                { key: 'hometown', label: '🏠 Quê quán', value: data.hometown?.name },
+                { key: 'location', label: '📍 Đang sống', value: data.location?.name },
+                { key: 'relationship_status', label: '💑 Tình trạng', value: data.relationship_status },
+                { key: 'work', label: '💼 Công việc', value: data.work?.[0]?.employer?.name },
+                { key: 'education', label: '🎓 Học tại', value: data.education?.[0]?.school?.name },
+                { key: 'website', label: '🌐 Website', value: data.website },
+                { key: 'subscribers', label: '👥 Followers', value: data.subscribers?.summary?.total_count },
+                { key: 'updated_time', label: '🔄 Cập nhật', value: data.updated_time },
+                { key: 'timezone', label: '⏰ Múi giờ', value: data.timezone }
+            ];
+
+            let fieldsHTML = '';
+            let successCount = 0;
+            let nullCount = 0;
+
+            fieldChecks.forEach(field => {
+                const hasValue = field.value !== undefined && field.value !== null && field.value !== '';
+                const status = hasValue ? 
+                    `<span class="field-status status-success">✓ CÓ DATA</span>` : 
+                    `<span class="field-status status-null">⚠ NULL</span>`;
+                
+                if (hasValue) successCount++;
+                else nullCount++;
+
+                let displayValue = field.value;
+                if (field.key === 'picture' && field.value) {
+                    displayValue = `<img src="${field.value}" style="max-width: 100px; border-radius: 50%;">`;
+                } else if (field.key === 'link' && field.value) {
+                    displayValue = `<a href="${field.value}" target="_blank">${field.value}</a>`;
+                } else if (field.key === 'website' && field.value) {
+                    displayValue = `<a href="${field.value}" target="_blank">${field.value}</a>`;
+                } else if (field.key === 'subscribers' && field.value) {
+                    displayValue = field.value.toLocaleString('de-DE') + ' người';
+                } else if (field.key === 'updated_time' && field.value) {
+                    const date = new Date(field.value);
+                    displayValue = date.toLocaleString('vi-VN');
+                } else if (field.key === 'timezone' && field.value !== undefined) {
+                    displayValue = `GMT ${field.value > 0 ? '+' : ''}${field.value}`;
+                } else if (!field.value) {
+                    displayValue = '<em style="color: #999;">null</em>';
+                }
+
+                fieldsHTML += `
+                    <div class="field-item">
+                        <span class="field-label">${field.label}:</span>
+                        <span class="field-value">${displayValue}</span>
+                        ${status}
+                    </div>
+                `;
+            });
+
+            resultEl.innerHTML = `
+                <div class="success">
+                    <h3>✅ Test thành công!</h3>
+                    <p style="margin-top: 10px;">
+                        <strong>${successCount}/19 fields</strong> có dữ liệu | 
+                        <strong>${nullCount}/19 fields</strong> null/ẩn
+                    </p>
+                </div>
+
+                <h3 style="color: #667eea; margin: 20px 0;">📊 Chi Tiết Từng Field:</h3>
+                ${fieldsHTML}
+
+                <div style="text-align: center; margin: 20px 0;">
+                    <button class="btn copy-btn" onclick="copyJSON()">📋 Copy Full JSON</button>
+                    <button class="btn copy-btn" onclick="copyFields()">📋 Copy Fields String</button>
+                    <button class="btn" onclick="window.open('${data.link}', '_blank')">👁️ Xem Profile</button>
+                </div>
+
+                <div class="raw-json">
+                    <h4 style="margin-bottom: 15px; color: #4fc3f7;">📄 Raw JSON Response:</h4>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+
+            // Store data globally
+            window.fbData = data;
+            window.fieldsString = fields;
+        }
+        
+        function displayError(error) {
+            const resultEl = document.getElementById('result');
+            resultEl.innerHTML = `
+                <div class="error">
+                    <h3>❌ Lỗi khi lấy dữ liệu!</h3>
+                    <div style="margin-top: 15px;">
+                        <strong>Message:</strong> ${error.message}<br>
+                        <strong>Code:</strong> ${error.code}<br>
+                        <strong>Type:</strong> ${error.type}
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <strong>Có thể do:</strong>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>Token đã hết hạn</li>
+                            <li>ID không tồn tại</li>
+                            <li>Thiếu quyền truy cập field</li>
+                            <li>User đã ẩn thông tin</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayNetworkError(error) {
+            const resultEl = document.getElementById('result');
+            resultEl.innerHTML = `
+                <div class="error">
+                    <h3>❌ Lỗi kết nối!</h3>
+                    <p style="margin-top: 10px;">${error.message}</p>
+                </div>
+            `;
+        }
+
+        function copyJSON() {
+            if (window.fbData) {
+                const jsonStr = JSON.stringify(window.fbData, null, 2);
+                navigator.clipboard.writeText(jsonStr).then(() => {
+                    alert('✅ JSON đã được copy!');
+                });
+            }
+        }
+
+        function copyFields() {
+            if (window.fieldsString) {
+                navigator.clipboard.writeText(window.fieldsString).then(() => {
+                    alert('✅ Fields string đã được copy!');
+                });
+            }
+        }
+    </script>
+</body>
+</html>
