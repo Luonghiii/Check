@@ -1,31 +1,57 @@
-// api/tiktok.js
+// api/tiktok.js - Version 2.0 with Anti-Detection
 const https = require('https');
 const http = require('http');
+
+/**
+ * Enhanced headers với browser fingerprinting
+ */
+function getEnhancedHeaders(referer = '') {
+    return {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Cache-Control': 'max-age=0',
+        'Referer': referer || 'https://www.tiktok.com/',
+        'Origin': 'https://www.tiktok.com'
+    };
+}
 
 /**
  * Giải quyết URL rút gọn TikTok
  */
 async function resolveTiktokUrl(idOrUrl) {
-    // Nếu là URL rút gọn
     if (idOrUrl.includes('vt.tiktok.com') || idOrUrl.includes('vm.tiktok.com')) {
-        return await followRedirect(idOrUrl);
+        try {
+            return await followRedirect(idOrUrl);
+        } catch (error) {
+            console.error('Error resolving short URL:', error.message);
+            return null;
+        }
     }
     
-    // Nếu là URL đầy đủ TikTok
-    if (idOrUrl.includes('tiktok.com')) {
+    if (idOrUrl.includes('tiktok.com/@') && idOrUrl.includes('/video/')) {
         return idOrUrl;
     }
     
-    // Nếu chỉ là ID video
     if (/^\d+$/.test(idOrUrl)) {
-        return `https://www.tiktok.com/@user/video/${idOrUrl}`;
+        return `https://www.tiktok.com/@tiktok/video/${idOrUrl}`;
     }
     
     return null;
 }
 
 /**
- * Follow redirect để lấy URL đầy đủ
+ * Follow redirect với timeout
  */
 function followRedirect(url) {
     return new Promise((resolve, reject) => {
@@ -33,37 +59,80 @@ function followRedirect(url) {
         
         const options = {
             method: 'HEAD',
-            headers: getDefaultHeaders()
+            headers: getEnhancedHeaders(),
+            timeout: 10000
         };
         
         const req = protocol.request(url, options, (res) => {
-            if (res.statusCode === 301 || res.statusCode === 302) {
-                resolve(res.headers.location);
+            if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303 || res.statusCode === 307 || res.statusCode === 308) {
+                const location = res.headers.location;
+                if (location) {
+                    // Nếu location là relative URL
+                    if (location.startsWith('/')) {
+                        resolve(`https://www.tiktok.com${location}`);
+                    } else {
+                        resolve(location);
+                    }
+                } else {
+                    reject(new Error('No location header in redirect'));
+                }
             } else {
                 resolve(url);
             }
         });
         
         req.on('error', reject);
-        req.setTimeout(10000, () => {
+        req.on('timeout', () => {
             req.destroy();
-            reject(new Error('Timeout'));
+            reject(new Error('Request timeout'));
         });
         req.end();
     });
 }
 
 /**
- * Lấy nội dung trang web
+ * Fetch page content với retry mechanism
  */
-function fetchPageContent(url) {
+async function fetchPageContent(url, retries = 2) {
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const content = await fetchPage(url);
+            if (content && content.length > 1000) { // Ensure we got actual content
+                return content;
+            }
+        } catch (error) {
+            console.error(`Attempt ${i + 1} failed:`, error.message);
+            if (i === retries) throw error;
+            await sleep(1000 * (i + 1)); // Exponential backoff
+        }
+    }
+    return null;
+}
+
+/**
+ * Fetch single page
+ */
+function fetchPage(url) {
     return new Promise((resolve, reject) => {
-        https.get(url, {
-            headers: getDefaultHeaders(),
-            timeout: 15000
-        }, (res) => {
+        const parsedUrl = new URL(url);
+        
+        const options = {
+            hostname: parsedUrl.hostname,
+            path: parsedUrl.pathname + parsedUrl.search,
+            method: 'GET',
+            headers: getEnhancedHeaders(url),
+            timeout: 20000
+        };
+        
+        const req = https.request(options, (res) => {
             let data = '';
             
+            // Handle redirects
+            if (res.statusCode === 301 || res.statusCode === 302) {
+                return resolve(fetchPage(res.headers.location));
+            }
+            
+            res.setEncoding('utf8');
             res.on('data', (chunk) => {
                 data += chunk;
             });
@@ -72,22 +141,33 @@ function fetchPageContent(url) {
                 if (res.statusCode === 200) {
                     resolve(data);
                 } else {
-                    resolve(null);
+                    reject(new Error(`HTTP ${res.statusCode}`));
                 }
             });
-        }).on('error', (err) => {
-            reject(err);
         });
+        
+        req.on('error', reject);
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
+        });
+        req.end();
     });
 }
 
 /**
- * Trích xuất dữ liệu video từ HTML
+ * Sleep helper
  */
-function extractVideoData(html) {
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Extract video data - Method 1: __UNIVERSAL_DATA_FOR_REHYDRATION__
+ */
+function extractVideoDataMethod1(html) {
     try {
-        // Tìm script tag chứa dữ liệu
-        const scriptMatch = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)<\/script>/s);
+        const scriptMatch = html.match(/<script[^>]*id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)<\/script>/s);
         
         if (!scriptMatch) {
             return null;
@@ -95,11 +175,7 @@ function extractVideoData(html) {
         
         const jsonData = JSON.parse(scriptMatch[1]);
         
-        // Kiểm tra cấu trúc dữ liệu
-        if (!jsonData.__DEFAULT_SCOPE__ || 
-            !jsonData.__DEFAULT_SCOPE__['webapp.video-detail'] ||
-            !jsonData.__DEFAULT_SCOPE__['webapp.video-detail'].itemInfo ||
-            !jsonData.__DEFAULT_SCOPE__['webapp.video-detail'].itemInfo.itemStruct) {
+        if (!jsonData.__DEFAULT_SCOPE__?.['webapp.video-detail']?.itemInfo?.itemStruct) {
             return null;
         }
         
@@ -110,10 +186,126 @@ function extractVideoData(html) {
 }
 
 /**
- * Lấy video chất lượng cao nhất
+ * Extract video data - Method 2: SIGI_STATE
+ */
+function extractVideoDataMethod2(html) {
+    try {
+        const scriptMatch = html.match(/<script[^>]*id="SIGI_STATE"[^>]*>(.*?)<\/script>/s);
+        
+        if (!scriptMatch) {
+            return null;
+        }
+        
+        const jsonData = JSON.parse(scriptMatch[1]);
+        
+        // Try different possible paths
+        const possiblePaths = [
+            jsonData.ItemModule,
+            jsonData.VideoDetail?.itemInfo?.itemStruct,
+            jsonData.ItemList?.video?.list?.[0]
+        ];
+        
+        for (const data of possiblePaths) {
+            if (data && Object.keys(data).length > 0) {
+                // If ItemModule, get first video
+                if (typeof data === 'object' && !Array.isArray(data)) {
+                    const firstKey = Object.keys(data)[0];
+                    if (firstKey && data[firstKey]) {
+                        return data[firstKey];
+                    }
+                }
+                return data;
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * Extract video data - Method 3: window object
+ */
+function extractVideoDataMethod3(html) {
+    try {
+        // Look for window['SIGI_STATE'] or similar patterns
+        const patterns = [
+            /window\['SIGI_STATE'\]\s*=\s*({.*?});/s,
+            /window\["SIGI_STATE"\]\s*=\s*({.*?});/s,
+            /__NEXT_DATA__.*?=\s*({.*?})<\/script>/s
+        ];
+        
+        for (const pattern of patterns) {
+            const match = html.match(pattern);
+            if (match) {
+                const jsonData = JSON.parse(match[1]);
+                
+                // Navigate through possible data structures
+                if (jsonData.ItemModule) {
+                    const firstKey = Object.keys(jsonData.ItemModule)[0];
+                    if (firstKey) return jsonData.ItemModule[firstKey];
+                }
+                
+                if (jsonData.props?.pageProps?.videoData) {
+                    return jsonData.props.pageProps.videoData;
+                }
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * Try all extraction methods
+ */
+function extractVideoData(html) {
+    // Method 1: Original __UNIVERSAL_DATA_FOR_REHYDRATION__
+    let data = extractVideoDataMethod1(html);
+    if (data) {
+        console.log('Extracted using Method 1: __UNIVERSAL_DATA_FOR_REHYDRATION__');
+        return data;
+    }
+    
+    // Method 2: SIGI_STATE
+    data = extractVideoDataMethod2(html);
+    if (data) {
+        console.log('Extracted using Method 2: SIGI_STATE');
+        return data;
+    }
+    
+    // Method 3: window object patterns
+    data = extractVideoDataMethod3(html);
+    if (data) {
+        console.log('Extracted using Method 3: window object');
+        return data;
+    }
+    
+    // Debug: Save HTML to see structure
+    console.log('HTML length:', html.length);
+    console.log('Contains __UNIVERSAL:', html.includes('__UNIVERSAL_DATA_FOR_REHYDRATION__'));
+    console.log('Contains SIGI_STATE:', html.includes('SIGI_STATE'));
+    console.log('Contains ItemModule:', html.includes('ItemModule'));
+    
+    return null;
+}
+
+/**
+ * Get best quality video
  */
 function getBestQualityVideo(postData) {
-    if (!postData.video || !postData.video.bitrateInfo || postData.video.bitrateInfo.length === 0) {
+    if (!postData.video?.bitrateInfo || postData.video.bitrateInfo.length === 0) {
+        // Fallback to direct download URL if available
+        if (postData.video?.downloadAddr) {
+            return {
+                UrlList: [postData.video.downloadAddr],
+                Width: postData.video.width || 0,
+                Height: postData.video.height || 0
+            };
+        }
         return null;
     }
     
@@ -121,7 +313,7 @@ function getBestQualityVideo(postData) {
     let maxResolution = 0;
     
     for (const bitrateInfo of postData.video.bitrateInfo) {
-        if (!bitrateInfo.PlayAddr || !bitrateInfo.PlayAddr.Width || !bitrateInfo.PlayAddr.Height) {
+        if (!bitrateInfo.PlayAddr?.Width || !bitrateInfo.PlayAddr?.Height) {
             continue;
         }
         
@@ -137,7 +329,7 @@ function getBestQualityVideo(postData) {
 }
 
 /**
- * Format dữ liệu response
+ * Format response data
  */
 function formatResponseData(postData, bestVideo, startTime) {
     return {
@@ -145,9 +337,9 @@ function formatResponseData(postData, bestVideo, startTime) {
         processed_time: parseFloat(((Date.now() - startTime) / 1000).toFixed(4)),
         data: {
             id: postData.id || '',
-            region: postData.locationCreated || '',
-            title: postData.desc || '',
-            cover: postData.video?.cover || '',
+            region: postData.locationCreated || postData.region || '',
+            title: postData.desc || postData.description || '',
+            cover: postData.video?.cover || postData.video?.originCover || '',
             duration: postData.video?.duration || 0,
             play: {
                 DataSize: bestVideo?.DataSize || '',
@@ -163,12 +355,12 @@ function formatResponseData(postData, bestVideo, startTime) {
                 id: postData.music?.id || '',
                 title: postData.music?.title || '',
                 playUrl: postData.music?.playUrl || '',
-                cover: postData.music?.coverLarge || '',
+                cover: postData.music?.coverLarge || postData.music?.coverMedium || '',
                 author: postData.music?.authorName || '',
                 original: postData.music?.original || false,
-                duration: postData.music?.preciseDuration?.preciseDuration || 0,
+                duration: postData.music?.preciseDuration?.preciseDuration || postData.music?.duration || 0,
             },
-            create_time: postData.createTime || '',
+            create_time: postData.createTime || postData.createTimeISO || '',
             stats: {
                 diggCount: postData.stats?.diggCount || 0,
                 shareCount: postData.stats?.shareCount || 0,
@@ -177,10 +369,10 @@ function formatResponseData(postData, bestVideo, startTime) {
                 collectCount: postData.stats?.collectCount || 0,
             },
             author: {
-                id: postData.author?.id || '',
+                id: postData.author?.id || postData.authorId || '',
                 uniqueId: postData.author?.uniqueId || '',
                 nickname: postData.author?.nickname || '',
-                avatarLarger: postData.author?.avatarLarger || '',
+                avatarLarger: postData.author?.avatarLarger || postData.author?.avatarMedium || '',
                 signature: postData.author?.signature || '',
                 verified: postData.author?.verified || false,
             },
@@ -192,7 +384,7 @@ function formatResponseData(postData, bestVideo, startTime) {
 }
 
 /**
- * Format contents và hashtags
+ * Format contents
  */
 function formatContents(contents) {
     return contents.map(content => ({
@@ -203,31 +395,11 @@ function formatContents(contents) {
 }
 
 /**
- * Lấy headers mặc định
- */
-function getDefaultHeaders() {
-    return {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Cache-Control': 'max-age=0'
-    };
-}
-
-/**
- * Parse TikTok post
+ * Main parse function
  */
 async function parseTiktokPost(idOrUrl) {
     const startTime = Date.now();
     
-    // Validate input
     if (!idOrUrl) {
         return {
             status: 'error',
@@ -236,45 +408,48 @@ async function parseTiktokPost(idOrUrl) {
     }
 
     try {
-        // Xử lý URL rút gọn TikTok
         const url = await resolveTiktokUrl(idOrUrl);
         
         if (!url) {
             return {
                 status: 'error',
-                message: 'Không thể xử lý URL'
+                message: 'Không thể xử lý URL. Vui lòng kiểm tra định dạng URL.'
             };
         }
 
-        // Lấy nội dung trang
+        console.log('Fetching URL:', url);
         const response = await fetchPageContent(url);
         
         if (!response) {
             return {
                 status: 'error',
-                message: 'Không thể tải trang TikTok. Vui lòng kiểm tra lại URL.'
+                message: 'Không thể tải trang TikTok. TikTok có thể đang chặn requests từ server.'
             };
         }
 
-        // Parse dữ liệu từ HTML
         const postData = extractVideoData(response);
         
         if (!postData) {
             return {
                 status: 'error',
-                message: 'Không tìm thấy dữ liệu video. URL có thể không hợp lệ hoặc video đã bị xóa.'
+                message: 'Không tìm thấy dữ liệu video. Có thể: (1) Video đã bị xóa, (2) URL không hợp lệ, hoặc (3) TikTok đã thay đổi cấu trúc HTML.',
+                debug: {
+                    url: url,
+                    htmlLength: response.length,
+                    hasUniversalData: response.includes('__UNIVERSAL_DATA_FOR_REHYDRATION__'),
+                    hasSigiState: response.includes('SIGI_STATE')
+                }
             };
         }
 
-        // Lấy video chất lượng cao nhất
         const bestVideo = getBestQualityVideo(postData);
 
-        // Tạo response
         return formatResponseData(postData, bestVideo, startTime);
     } catch (error) {
         return {
             status: 'error',
-            message: 'Đã xảy ra lỗi: ' + error.message
+            message: 'Đã xảy ra lỗi: ' + error.message,
+            error_details: error.stack
         };
     }
 }
@@ -282,18 +457,15 @@ async function parseTiktokPost(idOrUrl) {
 // ==================== VERCEL SERVERLESS FUNCTION ====================
 
 module.exports = async (req, res) => {
-    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-    // Handle OPTIONS request
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    // Lấy URL từ query hoặc body
     const idOrUrl = req.query.url || req.body?.url || '';
 
     if (!idOrUrl) {
@@ -301,14 +473,13 @@ module.exports = async (req, res) => {
             status: 'error',
             message: 'Vui lòng cung cấp URL video TikTok bằng cách thêm tham số "?url=" vào URL.',
             example: {
-                full_url: '?url=https://www.tiktok.com/@username/video/1234567890',
-                short_url: '?url=https://vt.tiktok.com/ZS23K2jtk/',
-                video_id: '?url=7422250015885675783'
+                full_url: '/tiktok?url=https://www.tiktok.com/@username/video/1234567890',
+                short_url: '/tiktok?url=https://vt.tiktok.com/ZS23K2jtk/',
+                video_id: '/tiktok?url=7422250015885675783'
             }
         });
     }
 
-    // Parse và trả về kết quả
     const result = await parseTiktokPost(idOrUrl);
     
     const statusCode = result.status === 'success' ? 200 : 400;
