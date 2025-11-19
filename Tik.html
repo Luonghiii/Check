@@ -12,53 +12,56 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
         }
 
         .container {
             background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             border-radius: 20px;
-            padding: 40px;
+            padding: 30px 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
-            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         h1 {
             text-align: center;
             color: #333;
-            margin-bottom: 30px;
-            font-size: 2em;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         input {
-            flex: 1;
+            width: 100%;
             padding: 15px;
             border: 2px solid #ddd;
             border-radius: 10px;
             font-size: 16px;
-            transition: border-color 0.3s;
+            margin-bottom: 10px;
+            transition: all 0.3s;
         }
 
         input:focus {
             outline: none;
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         button {
-            padding: 15px 30px;
+            width: 100%;
+            padding: 15px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
@@ -66,16 +69,11 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
         }
 
         button:active {
-            transform: translateY(0);
+            transform: scale(0.98);
         }
 
         button:disabled {
@@ -86,7 +84,7 @@
         .loading {
             text-align: center;
             color: #667eea;
-            font-size: 18px;
+            font-size: 16px;
             margin: 20px 0;
             display: none;
         }
@@ -95,13 +93,31 @@
             display: block;
         }
 
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .error {
             background: #fee;
             color: #c33;
             padding: 15px;
             border-radius: 10px;
-            margin-bottom: 20px;
+            margin: 20px 0;
             display: none;
+            line-height: 1.6;
         }
 
         .error.show {
@@ -110,23 +126,27 @@
 
         .user-info {
             display: none;
+            animation: fadeIn 0.5s;
         }
 
         .user-info.show {
             display: block;
-            animation: fadeIn 0.5s;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
         }
 
         .user-header {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 30px;
+            text-align: center;
+            margin-bottom: 20px;
             padding-bottom: 20px;
             border-bottom: 2px solid #eee;
         }
@@ -137,11 +157,14 @@
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #667eea;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
 
         .user-name h2 {
             color: #333;
             margin-bottom: 5px;
+            font-size: 1.4em;
         }
 
         .user-name p {
@@ -151,20 +174,25 @@
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
             margin-bottom: 20px;
         }
 
         .stat-item {
             background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-            padding: 20px;
+            padding: 20px 15px;
             border-radius: 10px;
             text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-item:active {
+            transform: scale(0.95);
         }
 
         .stat-value {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: bold;
             color: #667eea;
             margin-bottom: 5px;
@@ -172,53 +200,108 @@
 
         .stat-label {
             color: #666;
-            font-size: 14px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .bio {
             background: #f9f9f9;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
-            margin-top: 20px;
+            margin-top: 15px;
         }
 
         .bio h3 {
             color: #333;
             margin-bottom: 10px;
+            font-size: 1.1em;
         }
 
         .bio p {
             color: #666;
             line-height: 1.6;
+            font-size: 14px;
         }
 
         .verified-badge {
             display: inline-block;
             background: #20D5EC;
             color: white;
-            padding: 2px 8px;
+            padding: 3px 8px;
             border-radius: 5px;
             font-size: 12px;
             margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 400px) {
+            .container {
+                padding: 20px 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .stat-value {
+                font-size: 22px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎵 TikTok User Info</h1>
+        <h1>
+            <span>🎵</span>
+            <span>TikTok Info</span>
+        </h1>
+
+        <div class="success-message" id="successMessage">
+            ✅ Đã kết nối thành công với API!
+        </div>
         
         <div class="input-group">
             <input 
                 type="text" 
                 id="tiktokInput" 
-                placeholder="Nhập URL TikTok hoặc username (vd: @Luonghiii hoặc https://www.tiktok.com/@Luonghiii)"
-                value="https://www.tiktok.com/@Luonghiii"
+                placeholder="Nhập username (vd: Luonghiii)"
+                value="Luonghiii"
             >
-            <button id="searchBtn" onclick="fetchUserInfo()">Tìm kiếm</button>
+            <button id="searchBtn" onclick="fetchUserInfo()">
+                🔍 Tìm kiếm
+            </button>
         </div>
 
         <div class="loading" id="loading">
-            <p>⏳ Đang tải thông tin...</p>
+            <span class="loading-spinner"></span>
+            <span>Đang tải thông tin...</span>
         </div>
 
         <div class="error" id="error"></div>
@@ -227,57 +310,70 @@
     </div>
 
     <script>
+        // User Agent cho iOS
+        const USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';
+
         async function fetchUserInfo() {
             const input = document.getElementById('tiktokInput').value.trim();
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const userInfo = document.getElementById('userInfo');
             const searchBtn = document.getElementById('searchBtn');
+            const successMessage = document.getElementById('successMessage');
 
             // Reset trạng thái
             loading.classList.remove('show');
             error.classList.remove('show');
             userInfo.classList.remove('show');
+            successMessage.classList.remove('show');
 
             if (!input) {
-                showError('Vui lòng nhập URL hoặc username TikTok!');
+                showError('⚠️ Vui lòng nhập username TikTok!');
                 return;
             }
 
-            // Chuẩn hóa input thành URL đầy đủ
-            let tiktokUrl = input;
-            if (!input.startsWith('http')) {
-                // Nếu chỉ nhập username (có hoặc không có @)
-                const username = input.startsWith('@') ? input.slice(1) : input;
-                tiktokUrl = `https://www.tiktok.com/@${username}`;
-            }
+            // Loại bỏ @ nếu có
+            const username = input.startsWith('@') ? input.slice(1) : input;
 
             // Hiển thị loading
             loading.classList.add('show');
             searchBtn.disabled = true;
 
             try {
-                // Encode URL
-                const encodedUrl = encodeURIComponent(tiktokUrl);
-                const apiUrl = `https://info-tiktok-user.vercel.app/tiktok?input=${encodedUrl}`;
+                // Gọi API proxy
+                const apiUrl = `https://api-beta-app.vercel.app/api/tiktok-proxy?input=${encodeURIComponent(username)}&ua=${encodeURIComponent(USER_AGENT)}`;
 
-                const response = await fetch(apiUrl);
+                console.log('Calling API:', apiUrl);
+
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const data = await response.json();
+                console.log('API Response:', data);
 
                 if (data.status === 'success' && data.data) {
+                    // Hiển thị success message
+                    successMessage.classList.add('show');
+                    setTimeout(() => {
+                        successMessage.classList.remove('show');
+                    }, 3000);
+
                     displayUserInfo(data.data);
                 } else {
-                    showError('Không tìm thấy thông tin người dùng!');
+                    showError(data.message || '❌ Không tìm thấy thông tin người dùng!');
                 }
 
             } catch (err) {
                 console.error('Error:', err);
-                showError('Có lỗi xảy ra khi tải thông tin. Vui lòng thử lại!');
+                showError('❌ Có lỗi xảy ra: ' + err.message);
             } finally {
                 loading.classList.remove('show');
                 searchBtn.disabled = false;
@@ -289,13 +385,16 @@
             
             const html = `
                 <div class="user-header">
-                    <img src="${data.avatar || 'https://via.placeholder.com/100'}" alt="Avatar" class="avatar">
+                    <img src="${data.avatar || 'https://via.placeholder.com/100'}" 
+                         alt="Avatar" 
+                         class="avatar"
+                         onerror="this.src='https://via.placeholder.com/100?text=TikTok'">
                     <div class="user-name">
                         <h2>
-                            ${data.nickname || data.uniqueId || 'Unknown'}
+                            ${escapeHtml(data.nickname || data.uniqueId || 'Unknown')}
                             ${data.verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
                         </h2>
-                        <p>@${data.uniqueId || 'unknown'}</p>
+                        <p>@${escapeHtml(data.uniqueId || 'unknown')}</p>
                     </div>
                 </div>
 
@@ -321,7 +420,7 @@
                 ${data.signature ? `
                     <div class="bio">
                         <h3>📝 Bio</h3>
-                        <p>${data.signature}</p>
+                        <p>${escapeHtml(data.signature)}</p>
                     </div>
                 ` : ''}
             `;
@@ -332,18 +431,27 @@
 
         function showError(message) {
             const error = document.getElementById('error');
-            error.textContent = message;
+            error.innerHTML = message;
             error.classList.add('show');
         }
 
         function formatNumber(num) {
+            if (num >= 1000000000) {
+                return (num / 1000000000).toFixed(1) + 'B';
+            }
             if (num >= 1000000) {
                 return (num / 1000000).toFixed(1) + 'M';
             }
             if (num >= 1000) {
                 return (num / 1000).toFixed(1) + 'K';
             }
-            return num.toString();
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         // Cho phép nhấn Enter để tìm kiếm
@@ -351,6 +459,11 @@
             if (e.key === 'Enter') {
                 fetchUserInfo();
             }
+        });
+
+        // Auto focus input khi load trang
+        window.addEventListener('load', function() {
+            document.getElementById('tiktokInput').focus();
         });
     </script>
 </body>
