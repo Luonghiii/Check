@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy List Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-size: 18px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .proxy-list {
+            display: none;
+        }
+
+        .proxy-list.show {
+            display: block;
+        }
+
+        .proxy-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .proxy-item:hover {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        .proxy-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .proxy-host {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .country-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .proxy-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .detail-item {
+            display: flex;
+            gap: 5px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+        }
+
+        .copy-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #45a049;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Proxy List Viewer</h1>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalCount">0</div>
+                <div class="stat-label">Total Proxies</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="countryCount">0</div>
+                <div class="stat-label">Countries</div>
+            </div>
+        </div>
+
+        <button id="loadBtn" onclick="loadProxies()">
+            🔄 Tải danh sách Proxy
+        </button>
+
+        <div class="loading" id="loading">
+            ⏳ Đang tải dữ liệu...
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="proxy-list" id="proxyList">
+            <input 
+                type="text" 
+                class="search-box" 
+                id="searchBox" 
+                placeholder="🔍 Tìm kiếm theo host, country, username..."
+            >
+
+            <div class="filters" id="filters"></div>
+
+            <div id="proxyItems"></div>
+        </div>
+    </div>
+
+    <script>
+        let allProxies = [];
+        let filteredProxies = [];
+        let selectedCountry = 'ALL';
+
+        async function loadProxies() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const proxyList = document.getElementById('proxyList');
+            const loadBtn = document.getElementById('loadBtn');
+
+            // Reset
+            loading.classList.remove('show');
+            error.classList.remove('show');
+            proxyList.classList.remove('show');
+
+            loading.classList.add('show');
+            loadBtn.disabled = true;
+
+            try {
+                // Gọi API
+                const response = await fetch('https://api-beta-app.vercel.app/api/getproxy');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('API Response:', result);
+
+                if (result.success && result.data && result.data.data) {
+                    allProxies = result.data.data;
+                    filteredProxies = allProxies;
+                    
+                    displayStats();
+                    createFilters();
+                    displayProxies();
+                    
+                    proxyList.classList.add('show');
+                } else {
+                    showError('Không thể tải dữ liệu proxy!');
+                }
+
+            } catch (err) {
+                console.error('Error:', err);
+                showError('❌ Lỗi kết nối: ' + err.message);
+            } finally {
+                loading.classList.remove('show');
+                loadBtn.disabled = false;
+            }
+        }
+
+        function displayStats() {
+            const countries = [...new Set(allProxies.map(p => p.country))];
+            
+            document.getElementById('totalCount').textContent = allProxies.length;
+            document.getElementById('countryCount').textContent = countries.length;
+        }
+
+        function createFilters() {
+            const countries = [...new Set(allProxies.map(p => p.country))].sort();
+            const filtersDiv = document.getElementById('filters');
+            
+            let html = '<button class="filter-btn active" onclick="filterByCountry(\'ALL\')">ALL</button>';
+            
+            countries.forEach(country => {
+                const count = allProxies.filter(p => p.country === country).length;
+                html += `<button class="filter-btn" onclick="filterByCountry('${country}')">${country} (${count})</button>`;
+            });
+            
+            filtersDiv.innerHTML = html;
+        }
+
+        function filterByCountry(country) {
+            selectedCountry = country;
+            
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filter proxies
+            if (country === 'ALL') {
+                filteredProxies = allProxies;
+            } else {
+                filteredProxies = allProxies.filter(p => p.country === country);
+            }
+            
+            displayProxies();
+        }
+
+        function displayProxies() {
+            const container = document.getElementById('proxyItems');
+            
+            if (filteredProxies.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 30px;">Không tìm thấy proxy nào</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            filteredProxies.forEach((proxy, index) => {
+                const proxyString = `${proxy.host}:${proxy.port}:${proxy.username}:${proxy.password}`;
+                
+                html += `
+                    <div class="proxy-item">
+                        <div class="proxy-header">
+                            <span class="proxy-host">${proxy.host}:${proxy.port}</span>
+                            <span class="country-badge">${proxy.country}</span>
+                        </div>
+                        <div class="proxy-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Username:</span>
+                                <span>${proxy.username}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Password:</span>
+                                <span>${proxy.password}</span>
+                            </div>
+                        </div>
+                        <button class="copy-btn" onclick="copyProxy('${proxyString}')">
+                            📋 Copy
+                        </button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function copyProxy(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                event.target.textContent = '✓ Đã copy!';
+                setTimeout(() => {
+                    event.target.textContent = '📋 Copy';
+                }, 2000);
+            }).catch(err => {
+                alert('Không thể copy: ' + err);
+            });
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.classList.add('show');
+        }
+
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            if (searchTerm === '') {
+                filteredProxies = selectedCountry === 'ALL' 
+                    ? allProxies 
+                    : allProxies.filter(p => p.country === selectedCountry);
+            } else {
+                const baseProxies = selectedCountry === 'ALL' 
+                    ? allProxies 
+                    : allProxies.filter(p => p.country === selectedCountry);
+                
+                filteredProxies = baseProxies.filter(p => 
+                    p.host.toLowerCase().includes(searchTerm) ||
+                    p.country.toLowerCase().includes(searchTerm) ||
+                    p.username.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            displayProxies();
+        });
+    </script>
+</body>
+</html>
