@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chuyển đổi địa chỉ Việt Nam - Trước & Sau sát nhập</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .form-group label .required {
+            color: #e74c3c;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #555;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        .result-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .result-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .result-item strong {
+            color: #764ba2;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .result-item p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .error-box {
+            background: #fee;
+            border-left: 5px solid #e74c3c;
+            color: #c0392b;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error-box.show {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .info-box h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .info-content {
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .info-content p {
+            margin-bottom: 15px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        .address-display {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            border: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .address-text {
+            flex: 1;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            padding: 8px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #764ba2;
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 20px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+            opacity: 0.9;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ Chuyển đổi địa chỉ Việt Nam</h1>
+            <p>Tra cứu và chuyển đổi địa chỉ hành chính trước và sau khi sát nhập</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Panel: Old to New Conversion -->
+            <div class="card">
+                <h2>📍 Địa chỉ cũ → Địa chỉ mới</h2>
+                
+                <div class="tab-container">
+                    <button class="tab active" onclick="switchTab('manual')">Nhập thủ công</button>
+                    <button class="tab" onclick="switchTab('select')">Chọn từ danh sách</button>
+                </div>
+
+                <div id="manualTab" class="tab-content active">
+                    <div class="form-group">
+                        <label>1. Tỉnh/Thành phố <span class="required">*</span></label>
+                        <select id="provinceOld" onchange="loadWardsOld()">
+                            <option value="">Chọn Tỉnh/Thành phố</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>2. Phường/Xã (mới) <span class="required">*</span></label>
+                        <select id="wardNew">
+                            <option value="">Chọn Phường/Xã</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>3. Địa chỉ chi tiết (số nhà, đường, thôn xóm...)</label>
+                        <input type="text" id="detailAddress" placeholder="Ví dụ: Xóm Nghĩa Hưng">
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="convertOldToNew()">
+                            ➜ Chuyển đổi
+                        </button>
+                        <button class="btn-secondary" onclick="resetForm('old')">
+                            🔄 Đặt lại
+                        </button>
+                    </div>
+                </div>
+
+                <div id="selectTab" class="tab-content">
+                    <div class="form-group">
+                        <label>Tìm kiếm địa chỉ</label>
+                        <input type="text" id="searchAddress" placeholder="Nhập tên phường/xã để tìm..." oninput="searchAddress()">
+                    </div>
+                    <div id="searchResults"></div>
+                </div>
+
+                <div class="loading" id="loadingOld">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 10px; color: #667eea;">Đang xử lý...</p>
+                </div>
+
+                <div class="error-box" id="errorOld"></div>
+
+                <div class="result-box" id="resultOld">
+                    <h3>✨ Kết quả chuyển đổi</h3>
+                    <div class="result-item">
+                        <strong>📌 Địa chỉ cũ:</strong>
+                        <p id="oldAddressDisplay"></p>
+                    </div>
+                    <div class="result-item">
+                        <strong>✅ Địa chỉ mới (hiện tại):</strong>
+                        <div class="address-display">
+                            <span class="address-text" id="newAddressDisplay"></span>
+                            <button class="copy-btn" onclick="copyAddress('new')">📋 Sao chép</button>
+                        </div>
+                    </div>
+                    <div class="result-item" id="mergerInfo" style="display: none;">
+                        <strong>📋 Thông tin sát nhập:</strong>
+                        <p id="mergerDetails"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: New to Old Conversion -->
+            <div class="card">
+                <h2>📍 Địa chỉ mới → Địa chỉ cũ</h2>
+                
+                <div class="form-group">
+                    <label>1. Tỉnh/Thành phố <span class="required">*</span></label>
+                    <select id="provinceNew" onchange="loadWardsNew()">
+                        <option value="">Chọn Tỉnh/Thành phố</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>2. Quận/Huyện</label>
+                    <select id="districtNew" onchange="loadWardsNewByDistrict()">
+                        <option value="">Chọn Quận/Huyện</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>3. Phường/Xã (hiện tại) <span class="required">*</span></label>
+                    <select id="wardNewReverse">
+                        <option value="">Chọn Phường/Xã</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>4. Địa chỉ chi tiết (số nhà, đường, thôn xóm...)</label>
+                    <input type="text" id="detailAddressNew" placeholder="Ví dụ: Số 123, Đường ABC">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="convertNewToOld()">
+                        ← Chuyển đổi
+                    </button>
+                    <button class="btn-secondary" onclick="resetForm('new')">
+                        🔄 Đặt lại
+                    </button>
+                </div>
+
+                <div class="loading" id="loadingNew">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 10px; color: #667eea;">Đang xử lý...</p>
+                </div>
+
+                <div class="error-box" id="errorNew"></div>
+
+                <div class="result-box" id="resultNew">
+                    <h3>✨ Kết quả chuyển đổi</h3>
+                    <div class="result-item">
+                        <strong>✅ Địa chỉ mới (hiện tại):</strong>
+                        <p id="currentAddressDisplay"></p>
+                    </div>
+                    <div class="result-item">
+                        <strong>📌 Địa chỉ cũ (trước sát nhập):</strong>
+                        <div class="address-display">
+                            <span class="address-text" id="historicalAddressDisplay"></span>
+                            <button class="copy-btn" onclick="copyAddress('old')">📋 Sao chép</button>
+                        </div>
+                    </div>
+                    <div class="result-item" id="oldInfo" style="display: none;">
+                        <strong>📋 Chi tiết:</strong>
+                        <p id="oldDetails"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <div class="info-box">
+            <h2>📊 Thống kê dữ liệu</h2>
+            <div class="stats" id="statsContainer">
+                <div class="stat-card">
+                    <div class="number" id="totalProvinces">-</div>
+                    <div class="label">Tỉnh/Thành phố</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="totalWards">-</div>
+                    <div class="label">Phường/Xã</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="mergedProvinces">-</div>
+                    <div class="label">Tỉnh có sát nhập</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="mergedPercentage">-</div>
+                    <div class="label">Tỷ lệ sát nhập</div>
+                </div>
+            </div>
+            <div class="info-content">
+                <p><strong>📌 Về dịch vụ này:</strong></p>
+                <p>Website cung cấp dịch vụ chuyển đổi địa chỉ hành chính Việt Nam theo Nghị quyết số 202/2025/QH15, giúp bạn dễ dàng tra cứu và chuyển đổi địa chỉ giữa các đơn vị hành chính cũ và mới sau khi sát nhập.</p>
+                <p><strong>🔍 Dữ liệu cập nhật:</strong> 01/07/2025</p>
+                <p><strong>🌐 API Source:</strong> <a href="https://34tinhthanh.com" target="_blank" style="color: #667eea;">34tinhthanh.com</a></p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2025 Vietnam Address Converter | Made with ❤️ by <a href="https://rutgon.net" target="_blank">rutgon.net</a></p>
+            <p>Data source: <a href="https://34tinhthanh.com" target="_blank">34tinhthanh.com</a></p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://34tinhthanh.com/api';
+        let provincesData = [];
+        let wardsData = [];
+        let currentWardData = null;
+
+        // Initialize app
+        async function init() {
+            await loadProvinces();
+            await loadStats();
+        }
+
+        // Load provinces
+        async function loadProvinces() {
+            try {
+                const response = await fetch(`${API_BASE}/provinces`);
+                provincesData = await response.json();
+                
+                const selectOld = document.getElementById('provinceOld');
+                const selectNew = document.getElementById('provinceNew');
+                
+                provincesData.forEach(province => {
+                    const option1 = new Option(province.name, province.province_code);
+                    const option2 = new Option(province.name, province.province_code);
+                    selectOld.add(option1);
+                    selectNew.add(option2);
+                });
+            } catch (error) {
+                console.error('Error loading provinces:', error);
+                showError('errorOld', 'Không thể tải danh sách tỉnh/thành phố');
+            }
+        }
+
+        // Load wards for old to new conversion
+        async function loadWardsOld() {
+            const provinceCode = document.getElementById('provinceOld').value;
+            if (!provinceCode) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/wards?province_code=${provinceCode}`);
+                wardsData = await response.json();
+                
+                const selectWard = document.getElementById('wardNew');
+                selectWard.innerHTML = '<option value="">Chọn Phường/Xã</option>';
+                
+                wardsData.forEach(ward => {
+                    const option = new Option(ward.ward_name, ward.ward_code);
+                    selectWard.add(option);
+                });
+            } catch (error) {
+                console.error('Error loading wards:', error);
+                showError('errorOld', 'Không thể tải danh sách phường/xã');
+            }
+        }
+
+        // Load wards for new to old conversion
+        async function loadWardsNew() {
+            const provinceCode = document.getElementById('provinceNew').value;
+            if (!provinceCode) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/wards?province_code=${provinceCode}`);
+                wardsData = await response.json();
+                
+                // Get unique districts
+                const districts = [...new Set(wardsData.map(w => w.district_name))].filter(Boolean);
+                const selectDistrict = document.getElementById('districtNew');
+                selectDistrict.innerHTML = '<option value="">Tất cả Quận/Huyện</option>';
+                
+                districts.forEach(district => {
+                    const option = new Option(district, district);
+                    selectDistrict.add(option);
+                });
+                
+                // Load all wards initially
+                loadWardsNewByDistrict();
+            } catch (error) {
+                console.error('Error loading wards:', error);
+                showError('errorNew', 'Không thể tải danh sách phường/xã');
+            }
+        }
+
+        // Load wards by district
+        function loadWardsNewByDistrict() {
+            const district = document.getElementById('districtNew').value;
+            const selectWard = document.getElementById('wardNewReverse');
+            selectWard.innerHTML = '<option value="">Chọn Phường/Xã</option>';
+            
+            const filteredWards = district 
+                ? wardsData.filter(w => w.district_name === district)
+                : wardsData;
+            
+            filteredWards.forEach(ward => {
+                const option = new Option(ward.ward_name, ward.ward_code);
+                selectWard.add(option);
+            });
+        }
+
+        // Search address
+        let searchTimeout;
+        async function searchAddress() {
+            clearTimeout(searchTimeout);
+            const query = document.getElementById('searchAddress').value.trim();
+            
+            if (query.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+                    const results = await response.json();
+                    
+                    const resultsDiv = document.getElementById('searchResults');
+                    
+                    if (results.length === 0) {
+                        resultsDiv.innerHTML = '<p style="padding: 15px; color: #999;">Không tìm thấy kết quả</p>';
+                        return;
+                    }
+
+                    const wards = results.filter(r => r.type === 'ward');
+                    
+                    resultsDiv.innerHTML = wards.map(ward => `
+                        <div class="result-item" style="cursor: pointer; margin-bottom: 10px;" onclick='selectWardFromSearch(${JSON.stringify(ward)})'>
+                            <strong>${ward.ward_name}</strong>
+                            <p style="font-size: 0.9em; color: #666;">${ward.district_name || ''}, ${getProvinceName(ward.province_code)}</p>
+                            ${ward.is_merger_match ? `<p style="font-size: 0.85em; color: #e74c3c;">📌 Khớp với: ${ward.matched_old_unit}</p>` : ''}
+                        </div>
+                    `).join('');
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            }, 300);
+        }
+
+        function selectWardFromSearch(ward) {
+            document.getElementById('provinceOld').value = ward.province_code;
+            loadWardsOld().then(() => {
+                document.getElementById('wardNew').value = ward.ward_code;
+            });
+        }
+
+        function getProvinceName(code) {
+            const province = provincesData.find(p => p.province_code === code);
+            return province ? province.name : '';
+        }
+
+        // Convert old to new address
+        async function convertOldToNew() {
+            hideResults('old');
+            const wardCode = document.getElementById('wardNew').value;
+            const detailAddress = document.getElementById('detailAddress').value;
+
+            if (!wardCode) {
+                showError('errorOld', 'Vui lòng chọn Phường/Xã');
+                return;
+            }
+
+            showLoading('old');
+
+            try {
+                const ward = wardsData.find(w => w.ward_code === wardCode);
+                if (!ward) {
+                    throw new Error('Không tìm thấy thông tin phường/xã');
+                }
+
+                const provinceName = getProvinceName(ward.province_code);
+                
+                // Build addresses
+                let oldAddress = detailAddress;
+                let newAddress = detailAddress;
+
+                if (ward.old_ward_names && ward.old_ward_names.length > 0) {
+                    // Has merger history
+                    const oldWardName = ward.old_ward_names[0];
+                    oldAddress += (oldAddress ? ', ' : '') + oldWardName;
+                    newAddress += (newAddress ? ', ' : '') + ward.ward_name;
+
+                    document.getElementById('mergerInfo').style.display = 'block';
+                    document.getElementById('mergerDetails').innerHTML = `
+                        <strong>Sáp nhập từ:</strong> ${ward.old_ward_names.join(', ')}<br>
+                        <strong>Quận/Huyện:</strong> ${ward.district_name || 'N/A'}<br>
+                        <strong>Tỉnh/Thành:</strong> ${provinceName}
+                    `;
+                } else {
+                    // No merger
+                    oldAddress += (oldAddress ? ', ' : '') + ward.ward_name;
+                    newAddress = oldAddress;
+                    document.getElementById('mergerInfo').style.display = 'none';
+                }
+
+                if (ward.district_name) {
+                    oldAddress += ', ' + ward.district_name;
+                    newAddress += ', ' + ward.district_name;
+                }
+
+                oldAddress += ', ' + provinceName;
+                newAddress += ', ' + provinceName;
+
+                document.getElementById('oldAddressDisplay').textContent = oldAddress;
+                document.getElementById('newAddressDisplay').textContent = newAddress;
+                
+                hideLoading('old');
+                showResult('old');
+
+            } catch (error) {
+                hideLoading('old');
+                showError('errorOld', error.message || 'Đã xảy ra lỗi khi chuyển đổi');
+            }
+        }
+
+        // Convert new to old address
+        async function convertNewToOld() {
+            hideResults('new');
+            const wardCode = document.getElementById('wardNewReverse').value;
+            const detailAddress = document.getElementById('detailAddressNew').value;
+
+            if (!wardCode) {
+                showError('errorNew', 'Vui lòng chọn Phường/Xã');
+                return;
+            }
+
+            showLoading('new');
+
+            try {
+                const ward = wardsData.find(w => w.ward_code === wardCode);
+                if (!ward) {
+                    throw new Error('Không tìm thấy thông tin phường/xã');
+                }
+
+                const provinceName = getProvinceName(ward.province_code);
+                
+                // Build addresses
+                let currentAddress = detailAddress;
+                let historicalAddress = detailAddress;
+
+                currentAddress += (currentAddress ? ', ' : '') + ward.ward_name;
+
+                if (ward.old_ward_names && ward.old_ward_names.length > 0) {
+                    // Has merger history
+                    historicalAddress += (historicalAddress ? ', ' : '') + ward.old_ward_names.join(' / ');
+                    
+                    document.getElementById('oldInfo').style.display = 'block';
+                    document.getElementById('oldDetails').innerHTML = `
+                        <strong>Các đơn vị cũ:</strong> ${ward.old_ward_names.join(', ')}<br>
+                        <strong>Đã sáp nhập thành:</strong> ${ward.ward_name}<br>
+                        <strong>Quận/Huyện:</strong> ${ward.district_name || 'N/A'}
+                    `;
+                } else {
+                    historicalAddress = currentAddress;
+                    document.getElementById('oldInfo').style.display = 'block';
+                    document.getElementById('oldDetails').innerHTML = `
+                        <strong>Lưu ý:</strong> Phường/Xã này không có lịch sử sát nhập
+                    `;
+                }
+
+                if (ward.district_name) {
+                    currentAddress += ', ' + ward.district_name;
+                    historicalAddress += ', ' + ward.district_name;
+                }
+
+                currentAddress += ', ' + provinceName;
+                historicalAddress += ', ' + provinceName;
+
+                document.getElementById('currentAddressDisplay').textContent = currentAddress;
+                document.getElementById('historicalAddressDisplay').textContent = historicalAddress;
+                
+                hideLoading('new');
+                showResult('new');
+
+            } catch (error) {
+                hideLoading('new');
+                showError('errorNew', error.message || 'Đã xảy ra lỗi khi chuyển đổi');
+            }
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const stats = await response.json();
+                
+                document.getElementById('totalProvinces').textContent = stats.numProvinces || 63;
+                document.getElementById('totalWards').textContent = stats.numWards || 0;
+                document.getElementById('mergedProvinces').textContent = stats.numMergedProvinces || 0;
+                document.getElementById('mergedPercentage').textContent = (stats.mergedWardsPercentage || '0') + '%';
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Copy address to clipboard
+        function copyAddress(type) {
+            const textElement = type === 'new' 
+                ? document.getElementById('newAddressDisplay')
+                : type === 'old'
+                ? document.getElementById('historicalAddressDisplay')
+                : null;
+            
+            if (textElement) {
+                const text = textElement.textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('✅ Đã sao chép địa chỉ!');
+                }).catch(() => {
+                    alert('❌ Không thể sao chép. Vui lòng thử lại!');
+                });
+            }
+        }
+
+        // Reset form
+        function resetForm(type) {
+            if (type === 'old') {
+                document.getElementById('provinceOld').value = '';
+                document.getElementById('wardNew').innerHTML = '<option value="">Chọn Phường/Xã</option>';
+                document.getElementById('detailAddress').value = '';
+                hideResults('old');
+            } else {
+                document.getElementById('provinceNew').value = '';
+                document.getElementById('districtNew').innerHTML = '<option value="">Chọn Quận/Huyện</option>';
+                document.getElementById('wardNewReverse').innerHTML = '<option value="">Chọn Phường/Xã</option>';
+                document.getElementById('detailAddressNew').value = '';
+                hideResults('new');
+            }
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            
+            if (tabName === 'manual') {
+                tabs[0].classList.add('active');
+                document.getElementById('manualTab').classList.add('active');
+            } else {
+                tabs[1].classList.add('active');
+                document.getElementById('selectTab').classList.add('active');
+            }
+        }
+
+        // UI Helper functions
+        function showLoading(type) {
+            document.getElementById(`loading${type === 'old' ? 'Old' : 'New'}`).classList.add('show');
+        }
+
+        function hideLoading(type) {
+            document.getElementById(`loading${type === 'old' ? 'Old' : 'New'}`).classList.remove('show');
+        }
+
+        function showResult(type) {
+            document.getElementById(`result${type === 'old' ? 'Old' : 'New'}`).classList.add('show');
+        }
+
+        function hideResults(type) {
+            document.getElementById(`result${type === 'old' ? 'Old' : 'New'}`).classList.remove('show');
+            document.getElementById(`error${type === 'old' ? 'Old' : 'New'}`).classList.remove('show');
+        }
+
+        function showError(elementId, message) {
+            const errorBox = document.getElementById(elementId);
+            errorBox.textContent = '⚠️ ' + message;
+            errorBox.classList.add('show');
+            setTimeout(() => errorBox.classList.remove('show'), 5000);
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
