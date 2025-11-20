@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proxy List Viewer</title>
+    <title>Proxy Manager Pro</title>
     <style>
         * {
             margin: 0;
@@ -13,28 +13,81 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0f0f23;
+            color: #fff;
             min-height: 100vh;
             padding: 20px;
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
-        h1 {
+        .header {
             text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 2em;
+            margin-bottom: 30px;
         }
 
-        .stats {
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
@@ -42,9 +95,10 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
             border-radius: 10px;
+            padding: 20px;
             text-align: center;
         }
 
@@ -56,104 +110,70 @@
         }
 
         .stat-label {
-            color: #666;
-            font-size: 14px;
+            color: #888;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        button {
+        .search-bar {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
             color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 20px;
-            transition: transform 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .loading {
-            text-align: center;
-            color: #667eea;
-            font-size: 18px;
-            margin: 20px 0;
-            display: none;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
-        .error {
-            background: #fee;
-            color: #c33;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .error.show {
-            display: block;
-        }
-
-        .filters {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 8px 16px;
-            background: #f5f5f5;
-            border: 2px solid #ddd;
-            border-radius: 20px;
-            cursor: pointer;
             font-size: 14px;
-            transition: all 0.3s;
+            margin-bottom: 15px;
         }
 
-        .filter-btn.active {
-            background: #667eea;
-            color: white;
+        .search-bar:focus {
+            outline: none;
             border-color: #667eea;
         }
 
-        .proxy-list {
-            display: none;
+        .filter-chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
         }
 
-        .proxy-list.show {
-            display: block;
-        }
-
-        .proxy-item {
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
+        .chip {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
             transition: all 0.3s;
         }
 
-        .proxy-item:hover {
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        .chip:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chip.active {
+            background: #667eea;
+            border-color: #667eea;
+        }
+
+        .proxy-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .proxy-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .proxy-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #667eea;
             transform: translateX(5px);
         }
 
@@ -161,19 +181,19 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .proxy-host {
+            font-size: 18px;
             font-weight: bold;
-            color: #333;
-            font-size: 16px;
+            color: #667eea;
+            font-family: 'Courier New', monospace;
         }
 
-        .country-badge {
-            background: #667eea;
-            color: white;
-            padding: 4px 12px;
+        .country-flag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 5px 15px;
             border-radius: 15px;
             font-size: 12px;
             font-weight: bold;
@@ -181,101 +201,244 @@
 
         .proxy-details {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
+            margin-bottom: 15px;
             font-size: 13px;
-            color: #666;
         }
 
-        .detail-item {
+        .detail-row {
             display: flex;
-            gap: 5px;
+            gap: 8px;
         }
 
         .detail-label {
-            font-weight: bold;
+            color: #888;
+            min-width: 80px;
         }
 
-        .copy-btn {
-            background: #4caf50;
+        .detail-value {
+            color: #fff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .proxy-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
             color: white;
-            border: none;
-            padding: 5px 15px;
-            border-radius: 5px;
-            cursor: pointer;
             font-size: 12px;
-            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .copy-btn:hover {
-            background: #45a049;
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
-        .search-box {
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 18px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 14px;
-            margin-bottom: 15px;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
 
-        .search-box:focus {
-            outline: none;
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .format-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .format-option:hover {
+            background: rgba(255, 255, 255, 0.1);
             border-color: #667eea;
         }
 
+        .format-option.selected {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
         @media (max-width: 768px) {
-            .container {
-                padding: 20px;
+            .button-group {
+                flex-direction: column;
             }
 
-            h1 {
-                font-size: 1.5em;
+            button {
+                width: 100%;
             }
 
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
+            .proxy-details {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🌐 Proxy List Viewer</h1>
-
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <div class="stat-value" id="totalCount">0</div>
-                <div class="stat-label">Total Proxies</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="countryCount">0</div>
-                <div class="stat-label">Countries</div>
-            </div>
+        <div class="header">
+            <h1>🌐 Proxy Manager Pro</h1>
+            <p class="subtitle">Advanced Proxy Management & Export Tool</p>
         </div>
 
-        <button id="loadBtn" onclick="loadProxies()">
-            🔄 Tải danh sách Proxy
-        </button>
+        <div class="control-panel">
+            <div class="button-group">
+                <button onclick="loadProxies()">
+                    🔄 Tải Proxies
+                </button>
+                <button class="btn-success" onclick="openExportModal()" id="exportBtn" disabled>
+                    📥 Export
+                </button>
+                <button class="btn-secondary" onclick="copyAllProxies()" id="copyAllBtn" disabled>
+                    📋 Copy All
+                </button>
+                <button class="btn-secondary" onclick="clearData()">
+                    🗑️ Clear
+                </button>
+            </div>
 
-        <div class="loading" id="loading">
-            ⏳ Đang tải dữ liệu...
-        </div>
+            <div class="stats-grid" id="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="countryCount">0</div>
+                    <div class="stat-label">Countries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="displayCount">0</div>
+                    <div class="stat-label">Showing</div>
+                </div>
+            </div>
 
-        <div class="error" id="error"></div>
-
-        <div class="proxy-list" id="proxyList">
             <input 
                 type="text" 
-                class="search-box" 
+                class="search-bar" 
                 id="searchBox" 
-                placeholder="🔍 Tìm kiếm theo host, country, username..."
+                placeholder="🔍 Search by host, country, username..."
             >
 
-            <div class="filters" id="filters"></div>
+            <div class="filter-chips" id="filters"></div>
+        </div>
 
-            <div id="proxyItems"></div>
+        <div class="loading" id="loading">
+            <div>⏳ Loading proxies...</div>
+        </div>
+
+        <div class="proxy-grid" id="proxyGrid"></div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📥 Export Proxies</h3>
+                <p style="color: #888; font-size: 13px;">Choose export format</p>
+            </div>
+            <div class="modal-body">
+                <div class="format-option" onclick="selectFormat('standard')">
+                    <strong>Standard Format</strong>
+                    <div style="color: #888; font-size: 12px; margin-top: 5px;">
+                        host:port:username:password
+                    </div>
+                </div>
+                <div class="format-option" onclick="selectFormat('url')">
+                    <strong>URL Format</strong>
+                    <div style="color: #888; font-size: 12px; margin-top: 5px;">
+                        http://username:password@host:port
+                    </div>
+                </div>
+                <div class="format-option" onclick="selectFormat('json')">
+                    <strong>JSON Format</strong>
+                    <div style="color: #888; font-size: 12px; margin-top: 5px;">
+                        Full JSON array with all details
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeExportModal()" style="flex: 1;">Cancel</button>
+                <button onclick="exportProxies()" style="flex: 2;" class="btn-success">Export</button>
+            </div>
         </div>
     </div>
 
@@ -283,70 +446,62 @@
         let allProxies = [];
         let filteredProxies = [];
         let selectedCountry = 'ALL';
+        let selectedFormat = 'standard';
 
         async function loadProxies() {
             const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
-            const proxyList = document.getElementById('proxyList');
-            const loadBtn = document.getElementById('loadBtn');
-
-            // Reset
-            loading.classList.remove('show');
-            error.classList.remove('show');
-            proxyList.classList.remove('show');
+            const proxyGrid = document.getElementById('proxyGrid');
 
             loading.classList.add('show');
-            loadBtn.disabled = true;
+            proxyGrid.innerHTML = '';
 
             try {
-                // Gọi API
                 const response = await fetch('https://api-beta-app.vercel.app/api/getproxy');
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
                 const result = await response.json();
-                console.log('API Response:', result);
 
                 if (result.success && result.data && result.data.data) {
                     allProxies = result.data.data;
                     filteredProxies = allProxies;
                     
-                    displayStats();
+                    updateStats();
                     createFilters();
                     displayProxies();
                     
-                    proxyList.classList.add('show');
+                    document.getElementById('exportBtn').disabled = false;
+                    document.getElementById('copyAllBtn').disabled = false;
                 } else {
-                    showError('Không thể tải dữ liệu proxy!');
+                    showEmptyState('❌ Failed to load proxies');
                 }
 
             } catch (err) {
-                console.error('Error:', err);
-                showError('❌ Lỗi kết nối: ' + err.message);
+                showEmptyState('❌ Error: ' + err.message);
             } finally {
                 loading.classList.remove('show');
-                loadBtn.disabled = false;
             }
         }
 
-        function displayStats() {
+        function updateStats() {
             const countries = [...new Set(allProxies.map(p => p.country))];
             
             document.getElementById('totalCount').textContent = allProxies.length;
             document.getElementById('countryCount').textContent = countries.length;
+            document.getElementById('displayCount').textContent = filteredProxies.length;
         }
 
         function createFilters() {
             const countries = [...new Set(allProxies.map(p => p.country))].sort();
             const filtersDiv = document.getElementById('filters');
             
-            let html = '<button class="filter-btn active" onclick="filterByCountry(\'ALL\')">ALL</button>';
+            let html = '<div class="chip active" onclick="filterByCountry(\'ALL\')">ALL</div>';
             
             countries.forEach(country => {
                 const count = allProxies.filter(p => p.country === country).length;
-                html += `<button class="filter-btn" onclick="filterByCountry('${country}')">${country} (${count})</button>`;
+                html += `<div class="chip" onclick="filterByCountry('${country}')">${country} (${count})</div>`;
             });
             
             filtersDiv.innerHTML = html;
@@ -355,54 +510,66 @@
         function filterByCountry(country) {
             selectedCountry = country;
             
-            // Update active button
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
+            document.querySelectorAll('.chip').forEach(chip => {
+                chip.classList.remove('active');
             });
             event.target.classList.add('active');
             
-            // Filter proxies
-            if (country === 'ALL') {
-                filteredProxies = allProxies;
-            } else {
-                filteredProxies = allProxies.filter(p => p.country === country);
-            }
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
             
+            filteredProxies = allProxies.filter(p => {
+                const matchCountry = selectedCountry === 'ALL' || p.country === selectedCountry;
+                const matchSearch = searchTerm === '' || 
+                    p.host.toLowerCase().includes(searchTerm) ||
+                    p.country.toLowerCase().includes(searchTerm) ||
+                    p.username.toLowerCase().includes(searchTerm);
+                
+                return matchCountry && matchSearch;
+            });
+            
+            updateStats();
             displayProxies();
         }
 
         function displayProxies() {
-            const container = document.getElementById('proxyItems');
+            const container = document.getElementById('proxyGrid');
             
             if (filteredProxies.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #999; padding: 30px;">Không tìm thấy proxy nào</p>';
+                showEmptyState('No proxies found');
                 return;
             }
             
             let html = '';
             
-            filteredProxies.forEach((proxy, index) => {
-                const proxyString = `${proxy.host}:${proxy.port}:${proxy.username}:${proxy.password}`;
-                
+            filteredProxies.forEach(proxy => {
                 html += `
-                    <div class="proxy-item">
+                    <div class="proxy-card">
                         <div class="proxy-header">
                             <span class="proxy-host">${proxy.host}:${proxy.port}</span>
-                            <span class="country-badge">${proxy.country}</span>
+                            <span class="country-flag">${proxy.country}</span>
                         </div>
                         <div class="proxy-details">
-                            <div class="detail-item">
+                            <div class="detail-row">
                                 <span class="detail-label">Username:</span>
-                                <span>${proxy.username}</span>
+                                <span class="detail-value">${proxy.username}</span>
                             </div>
-                            <div class="detail-item">
+                            <div class="detail-row">
                                 <span class="detail-label">Password:</span>
-                                <span>${proxy.password}</span>
+                                <span class="detail-value">${proxy.password}</span>
                             </div>
                         </div>
-                        <button class="copy-btn" onclick="copyProxy('${proxyString}')">
-                            📋 Copy
-                        </button>
+                        <div class="proxy-actions">
+                            <button class="action-btn" onclick='copyProxy("${proxy.host}:${proxy.port}:${proxy.username}:${proxy.password}")'>
+                                📋 Copy
+                            </button>
+                            <button class="action-btn" onclick='copyProxyUrl("${proxy.username}", "${proxy.password}", "${proxy.host}", "${proxy.port}")'>
+                                🔗 Copy URL
+                            </button>
+                        </div>
                     </div>
                 `;
             });
@@ -410,45 +577,98 @@
             container.innerHTML = html;
         }
 
+        function showEmptyState(message) {
+            document.getElementById('proxyGrid').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <div>${message}</div>
+                </div>
+            `;
+        }
+
         function copyProxy(text) {
             navigator.clipboard.writeText(text).then(() => {
-                event.target.textContent = '✓ Đã copy!';
+                event.target.textContent = '✓ Copied!';
                 setTimeout(() => {
                     event.target.textContent = '📋 Copy';
                 }, 2000);
-            }).catch(err => {
-                alert('Không thể copy: ' + err);
             });
         }
 
-        function showError(message) {
-            const error = document.getElementById('error');
-            error.textContent = message;
-            error.classList.add('show');
+        function copyProxyUrl(user, pass, host, port) {
+            const url = `http://${user}:${pass}@${host}:${port}`;
+            navigator.clipboard.writeText(url).then(() => {
+                event.target.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    event.target.textContent = '🔗 Copy URL';
+                }, 2000);
+            });
         }
 
-        // Search functionality
-        document.getElementById('searchBox').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
+        function copyAllProxies() {
+            const text = filteredProxies.map(p => 
+                `${p.host}:${p.port}:${p.username}:${p.password}`
+            ).join('\n');
             
-            if (searchTerm === '') {
-                filteredProxies = selectedCountry === 'ALL' 
-                    ? allProxies 
-                    : allProxies.filter(p => p.country === selectedCountry);
-            } else {
-                const baseProxies = selectedCountry === 'ALL' 
-                    ? allProxies 
-                    : allProxies.filter(p => p.country === selectedCountry);
-                
-                filteredProxies = baseProxies.filter(p => 
-                    p.host.toLowerCase().includes(searchTerm) ||
-                    p.country.toLowerCase().includes(searchTerm) ||
-                    p.username.toLowerCase().includes(searchTerm)
-                );
+            navigator.clipboard.writeText(text).then(() => {
+                alert(`✓ Copied ${filteredProxies.length} proxies!`);
+            });
+        }
+
+        function openExportModal() {
+            document.getElementById('exportModal').classList.add('show');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.remove('show');
+        }
+
+        function selectFormat(format) {
+            selectedFormat = format;
+            document.querySelectorAll('.format-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.target.closest('.format-option').classList.add('selected');
+        }
+
+        function exportProxies() {
+            let content = '';
+            
+            if (selectedFormat === 'standard') {
+                content = filteredProxies.map(p => 
+                    `${p.host}:${p.port}:${p.username}:${p.password}`
+                ).join('\n');
+            } else if (selectedFormat === 'url') {
+                content = filteredProxies.map(p => 
+                    `http://${p.username}:${p.password}@${p.host}:${p.port}`
+                ).join('\n');
+            } else if (selectedFormat === 'json') {
+                content = JSON.stringify(filteredProxies, null, 2);
             }
             
-            displayProxies();
-        });
+            // Download file
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `proxies_${selectedFormat}_${Date.now()}.txt`;
+            a.click();
+            
+            closeExportModal();
+        }
+
+        function clearData() {
+            allProxies = [];
+            filteredProxies = [];
+            updateStats();
+            document.getElementById('proxyGrid').innerHTML = '';
+            document.getElementById('filters').innerHTML = '';
+            document.getElementById('exportBtn').disabled = true;
+            document.getElementById('copyAllBtn').disabled = true;
+        }
+
+        // Search listener
+        document.getElementById('searchBox').addEventListener('input', applyFilters);
     </script>
 </body>
 </html>
