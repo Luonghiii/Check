@@ -256,49 +256,6 @@
             background: #764ba2;
         }
 
-        .search-box {
-            position: relative;
-            margin-bottom: 10px;
-        }
-
-        .search-results {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            margin-top: 5px;
-        }
-
-        .search-results.show {
-            display: block;
-        }
-
-        .search-item {
-            padding: 12px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-            transition: background 0.2s;
-        }
-
-        .search-item:hover {
-            background: #f5f5f5;
-        }
-
-        .search-item:last-child {
-            border-bottom: none;
-        }
-
-        .search-item strong {
-            color: #667eea;
-        }
-
         .info-box {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -599,7 +556,6 @@
         ];
 
         let currentWardsNew = [];
-        let selectedWardNew = null;
 
         // Initialize
         async function init() {
@@ -747,16 +703,11 @@
         async function loadWardsNew() {
             const province = document.getElementById('provinceNew').value;
             const wardSelect = document.getElementById('wardNew');
-            const searchInput = document.getElementById('wardNewSearch');
             
-            wardSelect.innerHTML = '<option value="">Hoặc chọn từ danh sách</option>';
+            wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
             wardSelect.disabled = true;
-            searchInput.disabled = true;
-            searchInput.value = '';
             currentWardsNew = [];
-            selectedWardNew = null;
             hideResults('new');
-            document.getElementById('wardNewResults').classList.remove('show');
 
             if (!province) return;
 
@@ -772,74 +723,17 @@
                 });
                 
                 wardSelect.disabled = false;
-                searchInput.disabled = false;
             } catch (error) {
                 console.error('Error loading wards:', error);
                 showError('errorNew', 'Không thể tải danh sách phường/xã');
             }
         }
 
-        function searchWardNew() {
-            const searchTerm = document.getElementById('wardNewSearch').value.trim().toLowerCase();
-            const resultsDiv = document.getElementById('wardNewResults');
-            
-            if (searchTerm.length < 2) {
-                resultsDiv.classList.remove('show');
-                return;
-            }
-
-            const removeAccents = (str) => {
-                return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-            };
-
-            const filtered = currentWardsNew.filter(ward => {
-                const wardName = removeAccents(ward.name);
-                const search = removeAccents(searchTerm);
-                return wardName.includes(search);
-            });
-
-            if (filtered.length === 0) {
-                resultsDiv.innerHTML = '<div class="search-item">Không tìm thấy kết quả</div>';
-                resultsDiv.classList.add('show');
-                return;
-            }
-
-            resultsDiv.innerHTML = filtered.map(ward => `
-                <div class="search-item" onclick='selectWardFromSearch(${JSON.stringify(ward.name)})'>
-                    <strong>${ward.name}</strong>
-                </div>
-            `).join('');
-            
-            resultsDiv.classList.add('show');
-        }
-
-        function selectWardFromSearch(wardName) {
-            document.getElementById('wardNewSearch').value = wardName;
-            document.getElementById('wardNew').value = wardName;
-            document.getElementById('wardNewResults').classList.remove('show');
-            selectedWardNew = wardName;
-        }
-
-        function selectWardFromDropdown() {
-            const wardName = document.getElementById('wardNew').value;
-            if (wardName) {
-                document.getElementById('wardNewSearch').value = wardName;
-                selectedWardNew = wardName;
-            }
-        }
-
-        document.addEventListener('click', (e) => {
-            const searchBox = document.querySelector('.search-box');
-            if (searchBox && !searchBox.contains(e.target)) {
-                document.getElementById('wardNewResults').classList.remove('show');
-            }
-        });
-
         async function convertNewToOld() {
             hideResults('new');
             
             const province = document.getElementById('provinceNew').value;
-            const ward = selectedWardNew || document.getElementById('wardNew').value;
+            const ward = document.getElementById('wardNew').value;
             const detail = document.getElementById('detailAddressNew').value.trim();
 
             if (!province || !ward) {
@@ -889,15 +783,11 @@
 
         function resetFormNew() {
             document.getElementById('provinceNew').value = '';
-            document.getElementById('wardNew').innerHTML = '<option value="">Hoặc chọn từ danh sách</option>';
-            document.getElementById('wardNewSearch').value = '';
+            document.getElementById('wardNew').innerHTML = '<option value="">Chọn Phường/Xã</option>';
             document.getElementById('detailAddressNew').value = '';
             document.getElementById('wardNew').disabled = true;
-            document.getElementById('wardNewSearch').disabled = true;
             currentWardsNew = [];
-            selectedWardNew = null;
             hideResults('new');
-            document.getElementById('wardNewResults').classList.remove('show');
         }
 
         // ===== UTILITY FUNCTIONS =====
