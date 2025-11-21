@@ -469,12 +469,16 @@
                 <div class="result-box" id="resultNew">
                     <h3>✨ Kết quả chuyển đổi</h3>
                     <div class="result-item">
-                        <strong>✅ Địa chỉ mới (34 tỉnh):</strong>
-                        <p id="currentAddressDisplay"></p>
+                        <strong>📍 Địa chỉ cũ:</strong>
+                        <p id="oldAddressNote" style="color: #27ae60; margin-bottom: 15px;"></p>
                     </div>
                     <div class="result-item">
-                        <strong>📌 Địa chỉ cũ (63 tỉnh):</strong>
-                        <div id="oldAddressList"></div>
+                        <strong>📅 Trước đây</strong>
+                        <p id="oldAddressInfo"></p>
+                    </div>
+                    <div class="result-item">
+                        <strong>✨ Hiện tại</strong>
+                        <p id="currentAddressInfo"></p>
                     </div>
                 </div>
             </div>
@@ -751,25 +755,31 @@
                     throw new Error('Không tìm thấy thông tin chuyển đổi');
                 }
 
-                // Build current address
-                let currentAddress = detail ? detail + ', ' : '';
-                currentAddress += `${ward}, ${province}`;
+                // Display note if detail address provided
+                const noteEl = document.getElementById('oldAddressNote');
+                if (detail) {
+                    noteEl.innerHTML = `Do Phường/Xã "<strong>${ward}</strong>" được sáp nhập từ nhiều Phường/Xã nên chưa tìm được địa chỉ "<strong>${detail}</strong>" thuộc Phường/Xã cũ nào (tham khảo thêm bên dưới)`;
+                    noteEl.style.display = 'block';
+                } else {
+                    noteEl.style.display = 'none';
+                }
 
-                document.getElementById('currentAddressDisplay').textContent = currentAddress;
+                // Build old address info (Trước đây)
+                const oldWardNames = dataArray.map(item => item.old_ward_name).join(', ');
+                const oldDistrict = dataArray[0].old_district_name;
+                const oldProvince = dataArray[0].old_province_name;
 
-                // Build old addresses list
-                const oldAddressList = document.getElementById('oldAddressList');
-                oldAddressList.innerHTML = dataArray.map((item, index) => {
-                    let oldAddress = detail ? detail + ', ' : '';
-                    oldAddress += `${item.old_ward_name}, ${item.old_district_name}, ${item.old_province_name}`;
-                    
-                    return `
-                        <div class="address-display" style="margin-bottom: 10px;">
-                            <span class="address-text">${index + 1}. ${oldAddress}</span>
-                            <button class="copy-btn" onclick="copyText('${oldAddress.replace(/'/g, "\\'")}')">📋 Sao chép</button>
-                        </div>
-                    `;
-                }).join('');
+                document.getElementById('oldAddressInfo').innerHTML = `
+                    <strong>Sáp nhập từ:</strong> ${oldWardNames}<br>
+                    <strong>Quận/Huyện:</strong> ${oldDistrict}<br>
+                    <strong>Tỉnh/Thành:</strong> ${oldProvince}
+                `;
+
+                // Build current address info (Hiện tại)
+                document.getElementById('currentAddressInfo').innerHTML = `
+                    <strong>Phường/Xã:</strong> ${ward}<br>
+                    <strong>Tỉnh/Thành:</strong> ${province}
+                `;
 
                 hideLoading('new');
                 showResult('new');
