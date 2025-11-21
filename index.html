@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chuyển đổi địa chỉ Việt Nam - Trước & Sau sát nhập</title>
+    <title>Chuyển đổi địa chỉ Việt Nam - 34 Tỉnh/Thành</title>
     <style>
         * {
             margin: 0;
@@ -258,7 +258,7 @@
 
         .search-box {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         .search-results {
@@ -400,16 +400,16 @@
     <div class="container">
         <div class="header">
             <h1>🗺️ Chuyển đổi địa chỉ Việt Nam</h1>
-            <p>Tra cứu và chuyển đổi địa chỉ hành chính trước và sau khi sát nhập theo NQ 202/2025/QH15</p>
+            <p>63 tỉnh/thành → 34 tỉnh/thành theo NQ 202/2025/QH15</p>
         </div>
 
         <div class="main-content">
             <!-- Left Panel: Old to New Conversion -->
             <div class="card">
-                <h2>📍 Địa chỉ cũ → Địa chỉ mới</h2>
+                <h2>📍 Địa chỉ cũ (63) → Địa chỉ mới (34)</h2>
                 
                 <div class="form-group">
-                    <label>1. Tỉnh/Thành phố <span class="required">*</span></label>
+                    <label>1. Tỉnh/Thành phố (cũ - 63 tỉnh) <span class="required">*</span></label>
                     <select id="provinceOld" onchange="loadDistrictsOld()">
                         <option value="">Chọn Tỉnh/Thành phố</option>
                     </select>
@@ -430,8 +430,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>4. Địa chỉ chi tiết (số nhà, đường, thôn xóm...)</label>
-                    <input type="text" id="detailAddressOld" placeholder="Ví dụ: Xóm Nghĩa Hưng">
+                    <label>4. Địa chỉ chi tiết</label>
+                    <input type="text" id="detailAddressOld" placeholder="Số nhà, đường, thôn xóm...">
                 </div>
 
                 <div class="button-group">
@@ -453,18 +453,18 @@
                 <div class="result-box" id="resultOld">
                     <h3>✨ Kết quả chuyển đổi</h3>
                     <div class="result-item">
-                        <strong>📌 Địa chỉ cũ:</strong>
+                        <strong>📌 Địa chỉ cũ (63 tỉnh):</strong>
                         <p id="oldAddressDisplay"></p>
                     </div>
                     <div class="result-item">
-                        <strong>✅ Địa chỉ mới (hiện tại):</strong>
+                        <strong>✅ Địa chỉ mới (34 tỉnh):</strong>
                         <div class="address-display">
                             <span class="address-text" id="newAddressDisplay"></span>
                             <button class="copy-btn" onclick="copyAddress('newAddressDisplay')">📋 Sao chép</button>
                         </div>
                     </div>
                     <div class="result-item" id="conversionInfo">
-                        <strong>📋 Thông tin chuyển đổi:</strong>
+                        <strong>📋 Thông tin:</strong>
                         <p id="conversionDetails"></p>
                     </div>
                 </div>
@@ -472,10 +472,10 @@
 
             <!-- Right Panel: New to Old Conversion -->
             <div class="card">
-                <h2>📍 Địa chỉ mới → Địa chỉ cũ</h2>
+                <h2>📍 Địa chỉ mới (34) → Địa chỉ cũ (63)</h2>
                 
                 <div class="form-group">
-                    <label>1. Tỉnh/Thành phố (mới) <span class="required">*</span></label>
+                    <label>1. Tỉnh/Thành phố (mới - 34 tỉnh) <span class="required">*</span></label>
                     <select id="provinceNew" onchange="loadWardsNew()">
                         <option value="">Chọn Tỉnh/Thành phố</option>
                     </select>
@@ -487,14 +487,14 @@
                         <input type="text" id="wardNewSearch" placeholder="Tìm kiếm phường/xã..." oninput="searchWardNew()" disabled>
                         <div class="search-results" id="wardNewResults"></div>
                     </div>
-                    <select id="wardNew" onchange="selectWardFromDropdown()" disabled style="margin-top: 10px;">
+                    <select id="wardNew" onchange="selectWardFromDropdown()" disabled>
                         <option value="">Hoặc chọn từ danh sách</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>3. Địa chỉ chi tiết (số nhà, đường, thôn xóm...)</label>
-                    <input type="text" id="detailAddressNew" placeholder="Ví dụ: Số 456, Đường XYZ">
+                    <label>3. Địa chỉ chi tiết</label>
+                    <input type="text" id="detailAddressNew" placeholder="Số nhà, đường, thôn xóm...">
                 </div>
 
                 <div class="button-group">
@@ -516,11 +516,11 @@
                 <div class="result-box" id="resultNew">
                     <h3>✨ Kết quả chuyển đổi</h3>
                     <div class="result-item">
-                        <strong>✅ Địa chỉ mới (hiện tại):</strong>
+                        <strong>✅ Địa chỉ mới (34 tỉnh):</strong>
                         <p id="currentAddressDisplay"></p>
                     </div>
                     <div class="result-item">
-                        <strong>📌 Địa chỉ cũ (trước sát nhập):</strong>
+                        <strong>📌 Địa chỉ cũ (63 tỉnh):</strong>
                         <div id="oldAddressList"></div>
                     </div>
                 </div>
@@ -531,9 +531,9 @@
         <div class="info-box">
             <h2>📋 Thông tin</h2>
             <div class="info-content">
-                <p><strong>📌 Về dịch vụ này:</strong></p>
-                <p>Website cung cấp dịch vụ chuyển đổi địa chỉ hành chính Việt Nam theo Nghị quyết số 202/2025/QH15, giúp bạn dễ dàng tra cứu và chuyển đổi địa chỉ giữa các đơn vị hành chính cũ và mới sau khi sát nhập.</p>
-                <p><strong>🔍 Dữ liệu cập nhật:</strong> 20/11/2025</p>
+                <p><strong>📌 Về dự án sát nhập:</strong></p>
+                <p>Theo Nghị quyết số 202/2025/QH15, Việt Nam giảm từ 63 tỉnh/thành xuống còn <strong>34 tỉnh/thành phố</strong> để tối ưu bộ máy hành chính.</p>
+                <p><strong>🔍 Dữ liệu cập nhật:</strong> 01/07/2025</p>
                 <p><strong>🌐 API Source:</strong> <a href="https://34tinhthanh.com" target="_blank" style="color: #667eea;">34tinhthanh.com</a></p>
             </div>
         </div>
@@ -547,8 +547,8 @@
     <script>
         const API_BASE = 'https://api2-beta-app.vercel.app/api/proxy';
         
-        // Province list (63 provinces)
-        const PROVINCES = [
+        // 63 provinces (OLD system)
+        const PROVINCES_OLD = [
             "Thành phố Hà Nội", "Tỉnh Hà Giang", "Tỉnh Cao Bằng", "Tỉnh Bắc Kạn", "Tỉnh Tuyên Quang",
             "Tỉnh Lào Cai", "Tỉnh Điện Biên", "Tỉnh Lai Châu", "Tỉnh Sơn La", "Tỉnh Yên Bái",
             "Tỉnh Hòa Bình", "Tỉnh Thái Nguyên", "Tỉnh Lạng Sơn", "Tỉnh Quảng Ninh", "Tỉnh Bắc Giang",
@@ -564,6 +564,44 @@
             "Tỉnh Sóc Trăng", "Tỉnh Bạc Liêu", "Tỉnh Cà Mau"
         ];
 
+        // 34 provinces (NEW system - after merger)
+        const PROVINCES_NEW = [
+            "Tỉnh An Giang",
+            "Tỉnh Bắc Ninh",
+            "Tỉnh Cà Mau",
+            "Tỉnh Cao Bằng",
+            "Tỉnh Đắk Lắk",
+            "Tỉnh Điện Biên",
+            "Tỉnh Đồng Nai",
+            "Tỉnh Đồng Tháp",
+            "Tỉnh Gia Lai",
+            "Tỉnh Hà Tĩnh",
+            "Tỉnh Hưng Yên",
+            "Tỉnh Khánh Hoà",
+            "Tỉnh Lai Châu",
+            "Tỉnh Lâm Đồng",
+            "Tỉnh Lạng Sơn",
+            "Tỉnh Lào Cai",
+            "Tỉnh Nghệ An",
+            "Tỉnh Ninh Bình",
+            "Tỉnh Phú Thọ",
+            "Tỉnh Quảng Ngãi",
+            "Tỉnh Quảng Ninh",
+            "Tỉnh Quảng Trị",
+            "Tỉnh Sơn La",
+            "Tỉnh Tây Ninh",
+            "Tỉnh Thái Nguyên",
+            "Tỉnh Thanh Hóa",
+            "Thành phố Cần Thơ",
+            "Thành phố Đà Nẵng",
+            "Thành phố Hà Nội",
+            "Thành phố Hải Phòng",
+            "Thành phố Hồ Chí Minh",
+            "Thành phố Huế",
+            "Tỉnh Tuyên Quang",
+            "Tỉnh Vĩnh Long"
+        ];
+
         let currentWardsNew = [];
         let selectedWardNew = null;
 
@@ -577,11 +615,16 @@
             const selectOld = document.getElementById('provinceOld');
             const selectNew = document.getElementById('provinceNew');
             
-            PROVINCES.forEach(province => {
-                const option1 = new Option(province, province);
-                const option2 = new Option(province, province);
-                selectOld.add(option1);
-                selectNew.add(option2);
+            // Load 63 provinces for OLD system
+            PROVINCES_OLD.forEach(province => {
+                const option = new Option(province, province);
+                selectOld.add(option);
+            });
+
+            // Load 34 provinces for NEW system
+            PROVINCES_NEW.forEach(province => {
+                const option = new Option(province, province);
+                selectNew.add(option);
             });
         }
 
@@ -652,7 +695,7 @@
             const detail = document.getElementById('detailAddressOld').value.trim();
 
             if (!province || !district || !ward) {
-                showError('errorOld', 'Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện và Phường/Xã');
+                showError('errorOld', 'Vui lòng chọn đầy đủ thông tin');
                 return;
             }
 
@@ -670,7 +713,7 @@
                 let oldAddress = detail ? detail + ', ' : '';
                 oldAddress += `${ward}, ${district}, ${province}`;
 
-                // Build new address
+                // Build new address  
                 let newAddress = detail ? detail + ', ' : '';
                 newAddress += `${data.new_ward_name}, ${data.new_province_name}`;
 
@@ -678,10 +721,9 @@
                 document.getElementById('newAddressDisplay').textContent = newAddress;
                 
                 document.getElementById('conversionDetails').innerHTML = `
-                    <strong>Mã phường/xã cũ:</strong> ${data.old_ward_code}<br>
-                    <strong>Mã phường/xã mới:</strong> ${data.new_ward_code}<br>
-                    <strong>Mã tỉnh mới:</strong> ${data.new_province_code}<br>
-                    <strong>Cập nhật:</strong> ${new Date(data.updated_at).toLocaleDateString('vi-VN')}
+                    <strong>Từ:</strong> ${province} (63 tỉnh)<br>
+                    <strong>Sang:</strong> ${data.new_province_name} (34 tỉnh)<br>
+                    <strong>Mã mới:</strong> ${data.new_ward_code}
                 `;
 
                 hideLoading('old');
@@ -750,7 +792,6 @@
                 return;
             }
 
-            // Remove Vietnamese accents for better search
             const removeAccents = (str) => {
                 return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
             };
@@ -791,7 +832,6 @@
             }
         }
 
-        // Close search results when clicking outside
         document.addEventListener('click', (e) => {
             const searchBox = document.querySelector('.search-box');
             if (searchBox && !searchBox.contains(e.target)) {
@@ -807,7 +847,7 @@
             const detail = document.getElementById('detailAddressNew').value.trim();
 
             if (!province || !ward) {
-                showError('errorNew', 'Vui lòng chọn đầy đủ Tỉnh/Thành và Phường/Xã');
+                showError('errorNew', 'Vui lòng chọn đầy đủ thông tin');
                 return;
             }
 
@@ -885,7 +925,7 @@
                     document.execCommand('copy');
                     alert('✅ Đã sao chép địa chỉ!');
                 } catch (err) {
-                    alert('❌ Không thể sao chép. Vui lòng thử lại!');
+                    alert('❌ Không thể sao chép!');
                 }
                 document.body.removeChild(textArea);
             });
@@ -915,7 +955,6 @@
             setTimeout(() => errorBox.classList.remove('show'), 5000);
         }
 
-        // Initialize on page load
         window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
