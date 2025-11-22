@@ -351,15 +351,6 @@
                 </div>
             </div>
 
-            <div class="input-group">
-                <label>🔗 Link Filter</label>
-                <select id="linkFilter">
-                    <option value="all">All Links</option>
-                    <option value="internal">Internal Only</option>
-                    <option value="external">External Only</option>
-                </select>
-            </div>
-
             <button class="btn btn-primary" id="crawlBtn">
                 🚀 Bắt đầu Crawl
             </button>
@@ -514,7 +505,22 @@
                     throw new Error(data.error || 'Unknown error');
                 }
 
-                const html = data.html;
+                let html = data.html;
+                
+                // FORCE replace all GitHub/old domain URLs to user's input domain
+                // Tìm tất cả các old domains trong HTML và replace
+                const baseURL = new URL(url);
+                const userDomain = baseURL.origin; // https://dinhduyvinh.dev
+                
+                // Regex to find all URLs in HTML
+                const oldDomainPattern = /https?:\/\/[a-zA-Z0-9.-]+\.github\.io\/[a-zA-Z0-9_-]+/g;
+                
+                // Replace all old domains with user's domain
+                html = html.replace(oldDomainPattern, userDomain);
+                
+                // Also replace common CDN patterns that might be old domains
+                // Example: https://luonghiii.github.io/Check -> https://dinhduyvinh.dev
+                
                 currentHTML = html;
 
                 // Parse HTML
@@ -754,28 +760,19 @@
             document.getElementById('metaOutput').textContent = metaHTML;
 
             // Display links
-            const linkFilter = document.getElementById('linkFilter').value;
-            let filteredLinks = crawlData.links;
-            
-            if (linkFilter === 'internal') {
-                filteredLinks = crawlData.links.filter(l => l.type === 'internal');
-            } else if (linkFilter === 'external') {
-                filteredLinks = crawlData.links.filter(l => l.type === 'external');
-            }
-            
-            const internalLinks = filteredLinks.filter(l => l.type === 'internal');
-            const externalLinks = filteredLinks.filter(l => l.type === 'external');
+            const internalLinks = crawlData.links.filter(l => l.type === 'internal');
+            const externalLinks = crawlData.links.filter(l => l.type === 'external');
             
             let linksHTML = `Tìm thấy ${crawlData.links.length} links (${internalLinks.length} internal, ${externalLinks.length} external):\n\n`;
             
-            if (internalLinks.length > 0 && linkFilter !== 'external') {
+            if (internalLinks.length > 0) {
                 linksHTML += `📌 INTERNAL LINKS (${internalLinks.length}):\n`;
                 internalLinks.forEach((link, i) => {
                     linksHTML += `[${i + 1}] ${link.href}\n    Text: ${link.text}\n\n`;
                 });
             }
             
-            if (externalLinks.length > 0 && linkFilter !== 'internal') {
+            if (externalLinks.length > 0) {
                 linksHTML += `\n🔗 EXTERNAL LINKS (${externalLinks.length}):\n`;
                 externalLinks.forEach((link, i) => {
                     linksHTML += `[${i + 1}] ${link.href}\n    Domain: ${link.domain}\n    Text: ${link.text}\n\n`;
