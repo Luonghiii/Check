@@ -350,6 +350,15 @@
                 </div>
             </div>
 
+            <div class="input-group">
+                <label>🔗 Link Filter</label>
+                <select id="linkFilter">
+                    <option value="all">All Links</option>
+                    <option value="internal">Internal Only</option>
+                    <option value="external">External Only</option>
+                </select>
+            </div>
+
             <button class="btn btn-primary" id="crawlBtn">
                 🚀 Bắt đầu Crawl
             </button>
@@ -530,11 +539,23 @@
 
                 // Extract links
                 if (document.getElementById('extractLinks').checked) {
+                    const baseUrl = new URL(url);
+                    const baseDomain = baseUrl.hostname;
+                    
                     doc.querySelectorAll('a[href]').forEach(link => {
-                        crawlData.links.push({
-                            href: link.href,
-                            text: link.textContent.trim().substring(0, 100)
-                        });
+                        try {
+                            const linkUrl = new URL(link.href);
+                            const isInternal = linkUrl.hostname === baseDomain;
+                            
+                            crawlData.links.push({
+                                href: link.href,
+                                text: link.textContent.trim().substring(0, 100),
+                                type: isInternal ? 'internal' : 'external',
+                                domain: linkUrl.hostname
+                            });
+                        } catch (e) {
+                            // Skip invalid URLs
+                        }
                     });
                 }
 
@@ -591,10 +612,34 @@
             document.getElementById('metaOutput').textContent = metaHTML;
 
             // Display links
-            let linksHTML = `Tìm thấy ${crawlData.links.length} links:\n\n`;
-            crawlData.links.forEach((link, i) => {
-                linksHTML += `[${i + 1}] ${link.href}\n    Text: ${link.text}\n\n`;
-            });
+            const linkFilter = document.getElementById('linkFilter').value;
+            let filteredLinks = crawlData.links;
+            
+            if (linkFilter === 'internal') {
+                filteredLinks = crawlData.links.filter(l => l.type === 'internal');
+            } else if (linkFilter === 'external') {
+                filteredLinks = crawlData.links.filter(l => l.type === 'external');
+            }
+            
+            const internalLinks = filteredLinks.filter(l => l.type === 'internal');
+            const externalLinks = filteredLinks.filter(l => l.type === 'external');
+            
+            let linksHTML = `Tìm thấy ${crawlData.links.length} links (${internalLinks.length} internal, ${externalLinks.length} external):\n\n`;
+            
+            if (internalLinks.length > 0 && linkFilter !== 'external') {
+                linksHTML += `📌 INTERNAL LINKS (${internalLinks.length}):\n`;
+                internalLinks.forEach((link, i) => {
+                    linksHTML += `[${i + 1}] ${link.href}\n    Text: ${link.text}\n\n`;
+                });
+            }
+            
+            if (externalLinks.length > 0 && linkFilter !== 'internal') {
+                linksHTML += `\n🔗 EXTERNAL LINKS (${externalLinks.length}):\n`;
+                externalLinks.forEach((link, i) => {
+                    linksHTML += `[${i + 1}] ${link.href}\n    Domain: ${link.domain}\n    Text: ${link.text}\n\n`;
+                });
+            }
+            
             document.getElementById('linksOutput').textContent = linksHTML;
 
             // Display images
