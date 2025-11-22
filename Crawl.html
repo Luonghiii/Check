@@ -469,20 +469,24 @@
             showStatus('loading', '⏳ Đang crawl website...');
 
             try {
-                // Sử dụng CORS proxy
-                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+                // API Proxy của Luong Dev
+                const PROXY_API = 'https://api-beta-app.vercel.app/api/proxy';
                 
-                const response = await fetch(proxyUrl, {
-                    headers: {
-                        'User-Agent': userAgent
-                    }
-                });
+                const proxyUrl = PROXY_API + '?url=' + encodeURIComponent(url) + '&userAgent=' + encodeURIComponent(userAgent);
+                
+                const response = await fetch(proxyUrl);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
-                const html = await response.text();
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+                const html = data.html;
                 currentHTML = html;
 
                 // Parse HTML
