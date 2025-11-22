@@ -568,7 +568,9 @@
                 // Extract scripts
                 if (document.getElementById('extractScripts').checked) {
                     doc.querySelectorAll('script').forEach(script => {
-                        let scriptSrc = script.src || null;
+                        // Use getAttribute to get the actual HTML attribute value (after replace)
+                        // NOT script.src which browser auto-converts
+                        let scriptSrc = script.getAttribute('src') || null;
                         
                         if (scriptSrc && !scriptSrc.startsWith('http')) {
                             try {
@@ -587,7 +589,8 @@
                 // Extract stylesheets
                 doc.querySelectorAll('link[rel="stylesheet"], style').forEach(style => {
                     if (style.tagName === 'LINK') {
-                        let cssHref = style.href;
+                        // Use getAttribute instead of .href
+                        let cssHref = style.getAttribute('href');
                         
                         if (cssHref && !cssHref.startsWith('http')) {
                             try {
@@ -611,7 +614,8 @@
 
                 // Extract iframes
                 doc.querySelectorAll('iframe').forEach(iframe => {
-                    let iframeSrc = iframe.src || null;
+                    // Use getAttribute instead of .src
+                    let iframeSrc = iframe.getAttribute('src') || null;
                     
                     if (iframeSrc && !iframeSrc.startsWith('http')) {
                         try {
