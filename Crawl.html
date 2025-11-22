@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web HTML Crawler - Luong Dev</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -377,6 +378,14 @@
                     <div class="label">Scripts</div>
                 </div>
                 <div class="stat-box">
+                    <div class="number" id="statStylesheets">0</div>
+                    <div class="label">Stylesheets</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="statIframes">0</div>
+                    <div class="label">Iframes</div>
+                </div>
+                <div class="stat-box">
                     <div class="number" id="statLinks">0</div>
                     <div class="label">Links</div>
                 </div>
@@ -389,6 +398,8 @@
             <div class="tabs">
                 <button class="tab active" data-tab="html">Full HTML</button>
                 <button class="tab" data-tab="scripts">Scripts</button>
+                <button class="tab" data-tab="stylesheets">Stylesheets</button>
+                <button class="tab" data-tab="iframes">Iframes</button>
                 <button class="tab" data-tab="meta">Meta Tags</button>
                 <button class="tab" data-tab="links">Links</button>
                 <button class="tab" data-tab="images">Images</button>
@@ -399,6 +410,12 @@
             </div>
             <div class="tab-content" id="scripts">
                 <div class="code-output" id="scriptsOutput"></div>
+            </div>
+            <div class="tab-content" id="stylesheets">
+                <div class="code-output" id="stylesheetsOutput"></div>
+            </div>
+            <div class="tab-content" id="iframes">
+                <div class="code-output" id="iframesOutput"></div>
             </div>
             <div class="tab-content" id="meta">
                 <div class="code-output" id="metaOutput"></div>
@@ -414,6 +431,7 @@
                 <button class="btn btn-secondary" id="copyBtn">📋 Copy HTML</button>
                 <button class="btn btn-secondary" id="downloadBtn">💾 Download HTML</button>
                 <button class="btn btn-secondary" id="downloadJsonBtn">📦 Download JSON</button>
+                <button class="btn btn-primary" id="downloadFullSiteBtn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🚀 Download Full Website (ZIP)</button>
             </div>
         </div>
     </div>
@@ -440,6 +458,7 @@
         document.getElementById('copyBtn').addEventListener('click', copyHTML);
         document.getElementById('downloadBtn').addEventListener('click', downloadHTML);
         document.getElementById('downloadJsonBtn').addEventListener('click', downloadJSON);
+        document.getElementById('downloadFullSiteBtn').addEventListener('click', downloadFullWebsite);
 
         // Tabs switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -502,6 +521,9 @@
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
 
+                // Create base URL for resolving relative paths
+                const baseURL = new URL(url);
+
                 // Extract data
                 crawlData = {
                     url: url,
@@ -509,6 +531,8 @@
                     html: html,
                     size: new Blob([html]).size,
                     scripts: [],
+                    stylesheets: [],
+                    iframes: [],
                     meta: [],
                     links: [],
                     images: []
@@ -517,14 +541,74 @@
                 // Extract scripts
                 if (document.getElementById('extractScripts').checked) {
                     doc.querySelectorAll('script').forEach(script => {
+                        let scriptSrc = script.src || null;
+                        
+                        // Convert relative URL to absolute
+                        if (scriptSrc && !scriptSrc.startsWith('http')) {
+                            try {
+                                scriptSrc = new URL(scriptSrc, baseURL).href;
+                            } catch (e) {
+                                // Keep original if conversion fails
+                            }
+                        }
+                        
                         const scriptData = {
-                            src: script.src || null,
+                            src: scriptSrc,
                             type: script.type || 'text/javascript',
-                            content: script.src ? null : script.textContent.substring(0, 200) + '...'
+                            content: scriptSrc ? null : script.textContent.substring(0, 200) + '...'
                         };
                         crawlData.scripts.push(scriptData);
                     });
                 }
+
+                // Extract stylesheets
+                doc.querySelectorAll('link[rel="stylesheet"], style').forEach(style => {
+                    if (style.tagName === 'LINK') {
+                        let cssHref = style.href;
+                        
+                        // Convert relative URL to absolute
+                        if (cssHref && !cssHref.startsWith('http')) {
+                            try {
+                                cssHref = new URL(cssHref, baseURL).href;
+                            } catch (e) {
+                                // Keep original if conversion fails
+                            }
+                        }
+                        
+                        crawlData.stylesheets.push({
+                            type: 'external',
+                            href: cssHref,
+                            media: style.media || 'all'
+                        });
+                    } else {
+                        crawlData.stylesheets.push({
+                            type: 'inline',
+                            content: style.textContent.substring(0, 200) + '...',
+                            media: 'all'
+                        });
+                    }
+                });
+
+                // Extract iframes
+                doc.querySelectorAll('iframe').forEach(iframe => {
+                    let iframeSrc = iframe.src || null;
+                    
+                    // Convert relative URL to absolute
+                    if (iframeSrc && !iframeSrc.startsWith('http')) {
+                        try {
+                            iframeSrc = new URL(iframeSrc, baseURL).href;
+                        } catch (e) {
+                            // Keep original if conversion fails
+                        }
+                    }
+                    
+                    crawlData.iframes.push({
+                        src: iframeSrc,
+                        title: iframe.title || '',
+                        width: iframe.width || 'auto',
+                        height: iframe.height || 'auto'
+                    });
+                });
 
                 // Extract meta tags
                 if (document.getElementById('extractMeta').checked) {
@@ -539,16 +623,30 @@
 
                 // Extract links
                 if (document.getElementById('extractLinks').checked) {
-                    const baseUrl = new URL(url);
-                    const baseDomain = baseUrl.hostname;
+                    const baseDomain = baseURL.hostname;
                     
                     doc.querySelectorAll('a[href]').forEach(link => {
                         try {
-                            const linkUrl = new URL(link.href);
+                            let linkHref = link.getAttribute('href');
+                            
+                            // Convert relative URL to absolute
+                            if (linkHref && !linkHref.startsWith('http') && !linkHref.startsWith('mailto:') && !linkHref.startsWith('tel:') && !linkHref.startsWith('#')) {
+                                linkHref = new URL(linkHref, baseURL).href;
+                            } else if (linkHref && linkHref.startsWith('http')) {
+                                // Already absolute, keep as is
+                            } else {
+                                // mailto, tel, hash links - keep as is
+                            }
+                            
+                            if (!linkHref || linkHref.startsWith('mailto:') || linkHref.startsWith('tel:') || linkHref.startsWith('#')) {
+                                return; // Skip these
+                            }
+                            
+                            const linkUrl = new URL(linkHref);
                             const isInternal = linkUrl.hostname === baseDomain;
                             
                             crawlData.links.push({
-                                href: link.href,
+                                href: linkHref,
                                 text: link.textContent.trim().substring(0, 100),
                                 type: isInternal ? 'internal' : 'external',
                                 domain: linkUrl.hostname
@@ -562,8 +660,19 @@
                 // Extract images
                 if (document.getElementById('extractImages').checked) {
                     doc.querySelectorAll('img[src]').forEach(img => {
+                        let imgSrc = img.getAttribute('src');
+                        
+                        // Convert relative URL to absolute
+                        if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('data:')) {
+                            try {
+                                imgSrc = new URL(imgSrc, baseURL).href;
+                            } catch (e) {
+                                // Keep original if conversion fails
+                            }
+                        }
+                        
                         crawlData.images.push({
-                            src: img.src,
+                            src: imgSrc,
                             alt: img.alt || ''
                         });
                     });
@@ -588,6 +697,8 @@
             // Update stats
             document.getElementById('statSize').textContent = formatBytes(crawlData.size);
             document.getElementById('statScripts').textContent = crawlData.scripts.length;
+            document.getElementById('statStylesheets').textContent = crawlData.stylesheets.length;
+            document.getElementById('statIframes').textContent = crawlData.iframes.length;
             document.getElementById('statLinks').textContent = crawlData.links.length;
             document.getElementById('statImages').textContent = crawlData.images.length;
 
@@ -603,6 +714,37 @@
                 }
             });
             document.getElementById('scriptsOutput').textContent = scriptsHTML;
+
+            // Display stylesheets
+            const externalCSS = crawlData.stylesheets.filter(s => s.type === 'external');
+            const inlineCSS = crawlData.stylesheets.filter(s => s.type === 'inline');
+            
+            let stylesheetsHTML = `Tìm thấy ${crawlData.stylesheets.length} stylesheets (${externalCSS.length} external, ${inlineCSS.length} inline):\n\n`;
+            
+            if (externalCSS.length > 0) {
+                stylesheetsHTML += `📄 EXTERNAL STYLESHEETS (${externalCSS.length}):\n`;
+                externalCSS.forEach((css, i) => {
+                    stylesheetsHTML += `[${i + 1}] ${css.href}\n    Media: ${css.media}\n\n`;
+                });
+            }
+            
+            if (inlineCSS.length > 0) {
+                stylesheetsHTML += `\n📝 INLINE STYLES (${inlineCSS.length}):\n`;
+                inlineCSS.forEach((css, i) => {
+                    stylesheetsHTML += `[${i + 1}] ${css.content}\n\n`;
+                });
+            }
+            
+            document.getElementById('stylesheetsOutput').textContent = stylesheetsHTML;
+
+            // Display iframes
+            let iframesHTML = `Tìm thấy ${crawlData.iframes.length} iframes:\n\n`;
+            crawlData.iframes.forEach((iframe, i) => {
+                iframesHTML += `[${i + 1}] ${iframe.src || 'No src'}\n`;
+                iframesHTML += `    Title: ${iframe.title || 'N/A'}\n`;
+                iframesHTML += `    Size: ${iframe.width} x ${iframe.height}\n\n`;
+            });
+            document.getElementById('iframesOutput').textContent = iframesHTML;
 
             // Display meta
             let metaHTML = `Tìm thấy ${crawlData.meta.length} meta tags:\n\n`;
@@ -688,6 +830,239 @@
             a.click();
             URL.revokeObjectURL(url);
             showStatus('success', '✅ Đã tải xuống JSON!');
+        }
+
+        async function downloadFullWebsite() {
+            if (!currentHTML || !crawlData.url) {
+                showStatus('error', '❌ Vui lòng crawl website trước!');
+                return;
+            }
+
+            const btn = document.getElementById('downloadFullSiteBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Đang tải xuống...';
+            showStatus('loading', '⏳ Đang tải assets từ cùng domain...');
+
+            try {
+                const zip = new JSZip();
+                const baseURL = new URL(crawlData.url);
+                const websiteName = baseURL.hostname.replace(/\./g, '_');
+                const baseDomain = baseURL.hostname;
+                
+                // Create folders
+                const assetsFolder = zip.folder('assets');
+                const cssFolder = assetsFolder.folder('css');
+                const jsFolder = assetsFolder.folder('js');
+                const imagesFolder = assetsFolder.folder('images');
+
+                // Track downloaded files
+                const downloadedFiles = new Set();
+                let downloadCount = 0;
+
+                // Only download CSS files from SAME DOMAIN (not CDN)
+                const localCSS = crawlData.stylesheets.filter(s => {
+                    if (s.type !== 'external' || !s.href) return false;
+                    try {
+                        const url = new URL(s.href);
+                        return url.hostname === baseDomain; // Only same domain
+                    } catch (e) {
+                        return false;
+                    }
+                });
+
+                for (const css of localCSS) {
+                    if (!downloadedFiles.has(css.href)) {
+                        try {
+                            downloadedFiles.add(css.href);
+                            const fileName = getFileName(css.href, 'style.css');
+                            const response = await fetch(`https://api-beta-app.vercel.app/api/proxy?url=${encodeURIComponent(css.href)}`);
+                            const data = await response.json();
+                            if (data.success && data.html) {
+                                cssFolder.file(fileName, data.html);
+                                downloadCount++;
+                                showStatus('loading', `⏳ Đang tải CSS... (${downloadCount} files)`);
+                            }
+                        } catch (e) {
+                            console.error('Failed to download CSS:', css.href, e);
+                        }
+                    }
+                }
+
+                // Only download JS files from SAME DOMAIN (not CDN)
+                const localJS = crawlData.scripts.filter(s => {
+                    if (!s.src) return false;
+                    try {
+                        const url = new URL(s.src);
+                        return url.hostname === baseDomain; // Only same domain
+                    } catch (e) {
+                        return false;
+                    }
+                });
+
+                for (const script of localJS) {
+                    if (!downloadedFiles.has(script.src)) {
+                        try {
+                            downloadedFiles.add(script.src);
+                            const fileName = getFileName(script.src, 'script.js');
+                            const response = await fetch(`https://api-beta-app.vercel.app/api/proxy?url=${encodeURIComponent(script.src)}`);
+                            const data = await response.json();
+                            if (data.success && data.html) {
+                                jsFolder.file(fileName, data.html);
+                                downloadCount++;
+                                showStatus('loading', `⏳ Đang tải JS... (${downloadCount} files)`);
+                            }
+                        } catch (e) {
+                            console.error('Failed to download JS:', script.src, e);
+                        }
+                    }
+                }
+
+                // Only download images from SAME DOMAIN (not CDN)
+                const localImages = crawlData.images.filter(img => {
+                    if (!img.src || img.src.startsWith('data:')) return false;
+                    try {
+                        const url = new URL(img.src);
+                        return url.hostname === baseDomain; // Only same domain
+                    } catch (e) {
+                        return false;
+                    }
+                }).slice(0, 100); // Limit to 100 images
+
+                for (const img of localImages) {
+                    if (!downloadedFiles.has(img.src)) {
+                        try {
+                            downloadedFiles.add(img.src);
+                            const fileName = getFileName(img.src, 'image.jpg');
+                            const response = await fetch(img.src);
+                            const blob = await response.blob();
+                            imagesFolder.file(fileName, blob);
+                            downloadCount++;
+                            showStatus('loading', `⏳ Đang tải Images... (${downloadCount} files)`);
+                        } catch (e) {
+                            console.error('Failed to download image:', img.src, e);
+                        }
+                    }
+                }
+
+                // Modify HTML: CHỈ sửa paths cho files từ SAME DOMAIN, GIỮ NGUYÊN CDN links
+                let modifiedHTML = currentHTML;
+                
+                // Replace local CSS links only
+                for (const css of localCSS) {
+                    if (css.href) {
+                        const fileName = getFileName(css.href, 'style.css');
+                        modifiedHTML = modifiedHTML.replace(css.href, `assets/css/${fileName}`);
+                    }
+                }
+
+                // Replace local JS links only
+                for (const script of localJS) {
+                    if (script.src) {
+                        const fileName = getFileName(script.src, 'script.js');
+                        modifiedHTML = modifiedHTML.replace(script.src, `assets/js/${fileName}`);
+                    }
+                }
+
+                // Replace local image links only
+                for (const img of localImages) {
+                    if (img.src) {
+                        const fileName = getFileName(img.src, 'image.jpg');
+                        modifiedHTML = modifiedHTML.replace(new RegExp(img.src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `assets/images/${fileName}`);
+                    }
+                }
+
+                // Add modified HTML to ZIP
+                zip.file('index.html', modifiedHTML);
+
+                // Count CDN files
+                const cdnCSS = crawlData.stylesheets.filter(s => {
+                    if (s.type !== 'external' || !s.href) return false;
+                    try {
+                        const url = new URL(s.href);
+                        return url.hostname !== baseDomain;
+                    } catch (e) {
+                        return false;
+                    }
+                }).length;
+
+                const cdnJS = crawlData.scripts.filter(s => {
+                    if (!s.src) return false;
+                    try {
+                        const url = new URL(s.src);
+                        return url.hostname !== baseDomain;
+                    } catch (e) {
+                        return false;
+                    }
+                }).length;
+
+                // Add README
+                const readme = `# ${websiteName}
+
+Crawled from: ${crawlData.url}
+Date: ${new Date().toLocaleString()}
+
+## Files included:
+- index.html (main HTML file)
+- assets/css/ (${localCSS.length} local CSS files)
+- assets/js/ (${localJS.length} local JS files)  
+- assets/images/ (${localImages.length} local images)
+
+## CDN files (kept as-is):
+- ${cdnCSS} CSS files from CDN (jsdelivr, cloudflare, etc.)
+- ${cdnJS} JS files from CDN
+→ These files will load from CDN when you open the website (requires Internet)
+
+## How to use:
+1. Extract this ZIP file
+2. Open index.html in your browser
+3. Or upload to GitHub Pages / any hosting
+
+## Note:
+CDN links are preserved for better performance and smaller file size.
+Make sure you have Internet connection for CDN resources to load.
+
+---
+Crawled by Web HTML Crawler - Luong Dev
+`;
+                zip.file('README.md', readme);
+
+                // Generate ZIP file
+                showStatus('loading', '⏳ Đang nén file ZIP...');
+                const content = await zip.generateAsync({ 
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 9 }
+                });
+
+                // Download ZIP
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${websiteName}_${Date.now()}.zip`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                showStatus('success', `✅ Đã tải xuống! (${downloadCount} local files, ${cdnCSS + cdnJS} CDN links giữ nguyên)`);
+
+            } catch (error) {
+                showStatus('error', '❌ Lỗi: ' + error.message);
+                console.error('Download error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🚀 Download Full Website (ZIP)';
+            }
+        }
+
+        function getFileName(url, defaultName) {
+            try {
+                const urlObj = new URL(url);
+                const pathname = urlObj.pathname;
+                const fileName = pathname.substring(pathname.lastIndexOf('/') + 1) || defaultName;
+                // Clean filename
+                return fileName.replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 100);
+            } catch (e) {
+                return defaultName;
+            }
         }
 
         function formatBytes(bytes) {
