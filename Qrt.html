@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo QR Code Hình Trái Tim ❤️</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #e74c3c;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        input[type="text"], input[type="url"], select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, input[type="url"]:focus, select:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+
+        .color-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .color-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 40px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #output {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        #heartQRContainer {
+            display: inline-block;
+            position: relative;
+            margin: 20px auto;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            margin-top: 20px;
+            display: none;
+        }
+
+        .tip {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #856404;
+        }
+
+        .tip strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>❤️ QR Code Hình Trái Tim</h1>
+        <p class="subtitle">Tạo QR code độc đáo với hình dạng trái tim</p>
+
+        <div class="input-group">
+            <label for="qrText">Nội dung QR Code:</label>
+            <input type="text" id="qrText" placeholder="Nhập text, URL, hoặc tin nhắn..." value="https://claude.ai">
+        </div>
+
+        <div class="input-group">
+            <label for="qrSize">Kích thước:</label>
+            <select id="qrSize">
+                <option value="300">Nhỏ (300x300)</option>
+                <option value="500" selected>Trung bình (500x500)</option>
+                <option value="700">Lớn (700x700)</option>
+                <option value="1000">Rất lớn (1000x1000)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Màu sắc:</label>
+            <div class="color-group">
+                <div class="color-input">
+                    <input type="color" id="qrColor" value="#e74c3c">
+                    <span>Màu QR</span>
+                </div>
+                <div class="color-input">
+                    <input type="color" id="bgColor" value="#ffffff">
+                    <span>Màu nền</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="errorLevel">Độ chịu lỗi:</label>
+            <select id="errorLevel">
+                <option value="L">Thấp (L) - 7%</option>
+                <option value="M">Trung bình (M) - 15%</option>
+                <option value="Q" selected>Cao (Q) - 25%</option>
+                <option value="H">Rất cao (H) - 30%</option>
+            </select>
+        </div>
+
+        <button onclick="generateHeartQR()">🎨 Tạo QR Code</button>
+
+        <div id="output">
+            <div id="heartQRContainer"></div>
+            <button class="download-btn" id="downloadBtn" onclick="downloadQR()">📥 Tải xuống</button>
+        </div>
+
+        <div class="tip">
+            <strong>💡 Mẹo:</strong>
+            Chọn độ chịu lỗi cao (Q hoặc H) để QR code vẫn đọc được dù bị che khuất một phần bởi hình dạng trái tim. QR code hình trái tim có thể khó scan hơn, nên hãy test trước khi sử dụng!
+        </div>
+    </div>
+
+    <script>
+        function generateHeartQR() {
+            const text = document.getElementById('qrText').value;
+            const size = parseInt(document.getElementById('qrSize').value);
+            const qrColor = document.getElementById('qrColor').value;
+            const bgColor = document.getElementById('bgColor').value;
+            const errorLevel = document.getElementById('errorLevel').value;
+
+            if (!text.trim()) {
+                alert('Vui lòng nhập nội dung cho QR code!');
+                return;
+            }
+
+            // Clear previous output
+            const container = document.getElementById('heartQRContainer');
+            container.innerHTML = '';
+
+            // Create temporary div for QR code generation
+            const tempDiv = document.createElement('div');
+            tempDiv.style.display = 'none';
+            document.body.appendChild(tempDiv);
+
+            // Generate QR code
+            const qrcode = new QRCode(tempDiv, {
+                text: text,
+                width: size,
+                height: size,
+                colorDark: qrColor,
+                colorLight: bgColor,
+                correctLevel: QRCode.CorrectLevel[errorLevel]
+            });
+
+            // Wait for QR code to be generated
+            setTimeout(() => {
+                const qrImg = tempDiv.querySelector('img');
+                if (qrImg) {
+                    createHeartMask(qrImg, size, container);
+                    document.getElementById('downloadBtn').style.display = 'block';
+                }
+                document.body.removeChild(tempDiv);
+            }, 100);
+        }
+
+        function createHeartMask(qrImg, size, container) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Wait for image to load
+            qrImg.onload = function() {
+                // Draw QR code
+                ctx.drawImage(qrImg, 0, 0, size, size);
+
+                // Create heart mask
+                const imageData = ctx.getImageData(0, 0, size, size);
+                const data = imageData.data;
+
+                // Apply heart-shaped mask
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        const index = (y * size + x) * 4;
+                        
+                        // Normalize coordinates to -1 to 1
+                        const nx = (x / size) * 2 - 1;
+                        const ny = (y / size) * 2 - 1;
+
+                        // Heart shape equation
+                        const heartValue = Math.pow(nx * nx + ny * ny - 1, 3) - nx * nx * ny * ny * ny;
+                        
+                        // If outside heart shape, make transparent
+                        if (heartValue > 0.01) {
+                            data[index + 3] = 0; // Set alpha to 0 (transparent)
+                        }
+                    }
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+
+                // Add to container
+                container.innerHTML = '';
+                container.appendChild(canvas);
+            };
+
+            // Trigger image load if already cached
+            if (qrImg.complete) {
+                qrImg.onload();
+            }
+        }
+
+        function downloadQR() {
+            const canvas = document.querySelector('#heartQRContainer canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = 'heart-qr-code.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }
+        }
+
+        // Generate default QR code on page load
+        window.onload = function() {
+            generateHeartQR();
+        };
+    </script>
+</body>
+</html>
