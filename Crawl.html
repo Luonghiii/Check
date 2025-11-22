@@ -918,35 +918,10 @@
                     }
                 }
 
-                // Filter local images (same domain only)
-                const localImages = crawlData.images.filter(img => {
-                    if (!img.src || img.src.startsWith('data:')) return false;
-                    try {
-                        const url = new URL(img.src);
-                        return url.hostname === baseDomain;
-                    } catch (e) {
-                        return false;
-                    }
-                }).slice(0, 100);
-
-                // Download local images
-                for (const img of localImages) {
-                    if (!downloadedFiles.has(img.src)) {
-                        try {
-                            downloadedFiles.add(img.src);
-                            const fileName = getFileName(img.src, 'image.jpg');
-                            const response = await fetch(img.src);
-                            const blob = await response.blob();
-                            imagesFolder.file(fileName, blob);
-                            downloadCount++;
-                            showStatus('loading', `⏳ Đang tải Images... (${downloadCount} files)`);
-                        } catch (e) {
-                            console.error('Failed to download image:', img.src, e);
-                        }
-                    }
-                }
-
-                // Modify HTML: only replace local paths, keep CDN
+                // SKIP downloading images - keep original links
+                // Images will load from original URLs when HTML is opened
+                
+                // Modify HTML: replace local CSS/JS paths only, KEEP image links as-is
                 let modifiedHTML = currentHTML;
                 
                 for (const css of localCSS) {
@@ -963,12 +938,7 @@
                     }
                 }
 
-                for (const img of localImages) {
-                    if (img.src) {
-                        const fileName = getFileName(img.src, 'image.jpg');
-                        modifiedHTML = modifiedHTML.replace(new RegExp(img.src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `assets/images/${fileName}`);
-                    }
-                }
+                // Images: KEEP original URLs, don't replace or download
 
                 zip.file('index.html', modifiedHTML);
 
@@ -1002,17 +972,21 @@ Date: ${new Date().toLocaleString()}
 - index.html (main HTML file)
 - assets/css/ (${localCSS.length} local CSS files)
 - assets/js/ (${localJS.length} local JS files)  
-- assets/images/ (${localImages.length} local images)
 
-## CDN files (kept as-is):
+## NOT included (kept as external links):
 - ${cdnCSS} CSS files from CDN
 - ${cdnJS} JS files from CDN
-→ CDN links preserved for better performance
+- ${crawlData.images.length} images (load from original URLs)
+→ These will load from internet when you open the HTML
 
 ## How to use:
 1. Extract this ZIP file
-2. Open index.html in your browser
+2. Open index.html in your browser (requires Internet for CDN & images)
 3. Or upload to GitHub Pages / any hosting
+
+## Note:
+Images are NOT downloaded - they load from original URLs.
+This keeps the ZIP file small and fast to download.
 
 ---
 Crawled by Web HTML Crawler - Luong Dev
