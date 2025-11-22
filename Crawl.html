@@ -521,9 +521,24 @@
                     const baseURL = new URL(url);
                     const userDomain = baseURL.origin;
                     
-                    // Pattern: https://username.github.io/repo
-                    const githubPattern = /https?:\/\/[a-zA-Z0-9.-]+\.github\.io\/[a-zA-Z0-9_-]+/g;
-                    html = html.replace(githubPattern, userDomain);
+                    // Method 1: Find base GitHub URL pattern (without subpaths)
+                    // Example: https://luonghiii.github.io/Check
+                    const githubBasePattern = /https?:\/\/[a-zA-Z0-9.-]+\.github\.io\/[a-zA-Z0-9_-]+/;
+                    const match = html.match(githubBasePattern);
+                    
+                    if (match) {
+                        const githubBaseUrl = match[0]; // e.g., https://luonghiii.github.io/Check
+                        console.log('Found GitHub base URL:', githubBaseUrl);
+                        console.log('Replacing with:', userDomain);
+                        
+                        // Replace ALL occurrences (including subpaths)
+                        // This will replace:
+                        // https://luonghiii.github.io/Check -> https://dinhduyvinh.dev
+                        // https://luonghiii.github.io/Check/assets/js/main.js -> https://dinhduyvinh.dev/assets/js/main.js
+                        const escapedBase = githubBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const replaceRegex = new RegExp(escapedBase, 'g');
+                        html = html.replace(replaceRegex, userDomain);
+                    }
                     
                 } catch (e) {
                     console.error('Domain replace error:', e);
