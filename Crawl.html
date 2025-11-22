@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web HTML Crawler - Luong Dev</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            cursor: pointer;
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status.loading {
+            display: block;
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .result-container {
+            display: none;
+        }
+
+        .result-container.show {
+            display: block;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-box .number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-box .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .code-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-buttons .btn {
+            width: auto;
+            padding: 10px 20px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-buttons .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕷️ Web HTML Crawler</h1>
+            <p>Crawl HTML từ bất kỳ website nào - By Luong Dev</p>
+        </div>
+
+        <div class="card">
+            <div class="input-group">
+                <label>🌐 URL Website</label>
+                <input type="text" id="urlInput" placeholder="https://www.tiktok.com/@username hoặc bất kỳ URL nào">
+            </div>
+
+            <div class="input-group">
+                <label>🎭 User Agent</label>
+                <select id="userAgentSelect">
+                    <option value="desktop">Desktop Chrome (Windows)</option>
+                    <option value="mobile">Mobile Chrome (Android)</option>
+                    <option value="iphone">iPhone Safari</option>
+                    <option value="bot">GoogleBot</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+
+            <div class="input-group" id="customUserAgentGroup" style="display: none;">
+                <label>Custom User Agent</label>
+                <input type="text" id="customUserAgent" placeholder="Nhập custom user agent...">
+            </div>
+
+            <div class="options-grid">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="extractScripts" checked>
+                    <label for="extractScripts">Extract Scripts</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="extractMeta" checked>
+                    <label for="extractMeta">Extract Meta Tags</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="extractLinks" checked>
+                    <label for="extractLinks">Extract Links</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="extractImages">
+                    <label for="extractImages">Extract Images</label>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="crawlBtn">
+                🚀 Bắt đầu Crawl
+            </button>
+
+            <div class="status" id="status"></div>
+        </div>
+
+        <div class="card result-container" id="resultContainer">
+            <div class="result-stats">
+                <div class="stat-box">
+                    <div class="number" id="statSize">0</div>
+                    <div class="label">Kích thước</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="statScripts">0</div>
+                    <div class="label">Scripts</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="statLinks">0</div>
+                    <div class="label">Links</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="statImages">0</div>
+                    <div class="label">Images</div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="html">Full HTML</button>
+                <button class="tab" data-tab="scripts">Scripts</button>
+                <button class="tab" data-tab="meta">Meta Tags</button>
+                <button class="tab" data-tab="links">Links</button>
+                <button class="tab" data-tab="images">Images</button>
+            </div>
+
+            <div class="tab-content active" id="html">
+                <div class="code-output" id="htmlOutput"></div>
+            </div>
+            <div class="tab-content" id="scripts">
+                <div class="code-output" id="scriptsOutput"></div>
+            </div>
+            <div class="tab-content" id="meta">
+                <div class="code-output" id="metaOutput"></div>
+            </div>
+            <div class="tab-content" id="links">
+                <div class="code-output" id="linksOutput"></div>
+            </div>
+            <div class="tab-content" id="images">
+                <div class="code-output" id="imagesOutput"></div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="copyBtn">📋 Copy HTML</button>
+                <button class="btn btn-secondary" id="downloadBtn">💾 Download HTML</button>
+                <button class="btn btn-secondary" id="downloadJsonBtn">📦 Download JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const userAgents = {
+            desktop: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            mobile: 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+            iphone: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+            bot: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+            custom: ''
+        };
+
+        let currentHTML = '';
+        let crawlData = {};
+
+        // Event listeners
+        document.getElementById('userAgentSelect').addEventListener('change', function(e) {
+            const customGroup = document.getElementById('customUserAgentGroup');
+            customGroup.style.display = e.target.value === 'custom' ? 'block' : 'none';
+        });
+
+        document.getElementById('crawlBtn').addEventListener('click', crawlWebsite);
+        document.getElementById('copyBtn').addEventListener('click', copyHTML);
+        document.getElementById('downloadBtn').addEventListener('click', downloadHTML);
+        document.getElementById('downloadJsonBtn').addEventListener('click', downloadJSON);
+
+        // Tabs switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        async function crawlWebsite() {
+            const urlInput = document.getElementById('urlInput').value.trim();
+            const userAgentSelect = document.getElementById('userAgentSelect').value;
+            const customUserAgent = document.getElementById('customUserAgent').value;
+            
+            if (!urlInput) {
+                showStatus('error', '❌ Vui lòng nhập URL');
+                return;
+            }
+
+            let url = urlInput;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            const userAgent = userAgentSelect === 'custom' ? customUserAgent : userAgents[userAgentSelect];
+            
+            const crawlBtn = document.getElementById('crawlBtn');
+            crawlBtn.disabled = true;
+            crawlBtn.innerHTML = '<span class="spinner"></span>Đang crawl...';
+            
+            showStatus('loading', '⏳ Đang crawl website...');
+
+            try {
+                // Sử dụng CORS proxy
+                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+                
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'User-Agent': userAgent
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const html = await response.text();
+                currentHTML = html;
+
+                // Parse HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Extract data
+                crawlData = {
+                    url: url,
+                    timestamp: new Date().toISOString(),
+                    html: html,
+                    size: new Blob([html]).size,
+                    scripts: [],
+                    meta: [],
+                    links: [],
+                    images: []
+                };
+
+                // Extract scripts
+                if (document.getElementById('extractScripts').checked) {
+                    doc.querySelectorAll('script').forEach(script => {
+                        const scriptData = {
+                            src: script.src || null,
+                            type: script.type || 'text/javascript',
+                            content: script.src ? null : script.textContent.substring(0, 200) + '...'
+                        };
+                        crawlData.scripts.push(scriptData);
+                    });
+                }
+
+                // Extract meta tags
+                if (document.getElementById('extractMeta').checked) {
+                    doc.querySelectorAll('meta').forEach(meta => {
+                        const metaData = {
+                            name: meta.name || meta.property || meta.httpEquiv,
+                            content: meta.content
+                        };
+                        crawlData.meta.push(metaData);
+                    });
+                }
+
+                // Extract links
+                if (document.getElementById('extractLinks').checked) {
+                    doc.querySelectorAll('a[href]').forEach(link => {
+                        crawlData.links.push({
+                            href: link.href,
+                            text: link.textContent.trim().substring(0, 100)
+                        });
+                    });
+                }
+
+                // Extract images
+                if (document.getElementById('extractImages').checked) {
+                    doc.querySelectorAll('img[src]').forEach(img => {
+                        crawlData.images.push({
+                            src: img.src,
+                            alt: img.alt || ''
+                        });
+                    });
+                }
+
+                displayResults();
+                showStatus('success', '✅ Crawl thành công!');
+                
+            } catch (error) {
+                showStatus('error', '❌ Lỗi: ' + error.message);
+                console.error('Crawl error:', error);
+            } finally {
+                crawlBtn.disabled = false;
+                crawlBtn.innerHTML = '🚀 Bắt đầu Crawl';
+            }
+        }
+
+        function displayResults() {
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.classList.add('show');
+
+            // Update stats
+            document.getElementById('statSize').textContent = formatBytes(crawlData.size);
+            document.getElementById('statScripts').textContent = crawlData.scripts.length;
+            document.getElementById('statLinks').textContent = crawlData.links.length;
+            document.getElementById('statImages').textContent = crawlData.images.length;
+
+            // Display HTML
+            document.getElementById('htmlOutput').textContent = crawlData.html;
+
+            // Display scripts
+            let scriptsHTML = `Tìm thấy ${crawlData.scripts.length} scripts:\n\n`;
+            crawlData.scripts.forEach((script, i) => {
+                scriptsHTML += `[${i + 1}] ${script.src || 'Inline script'}\n`;
+                if (script.content) {
+                    scriptsHTML += `${script.content}\n\n`;
+                }
+            });
+            document.getElementById('scriptsOutput').textContent = scriptsHTML;
+
+            // Display meta
+            let metaHTML = `Tìm thấy ${crawlData.meta.length} meta tags:\n\n`;
+            crawlData.meta.forEach((meta, i) => {
+                metaHTML += `[${i + 1}] ${meta.name}: ${meta.content}\n`;
+            });
+            document.getElementById('metaOutput').textContent = metaHTML;
+
+            // Display links
+            let linksHTML = `Tìm thấy ${crawlData.links.length} links:\n\n`;
+            crawlData.links.forEach((link, i) => {
+                linksHTML += `[${i + 1}] ${link.href}\n    Text: ${link.text}\n\n`;
+            });
+            document.getElementById('linksOutput').textContent = linksHTML;
+
+            // Display images
+            let imagesHTML = `Tìm thấy ${crawlData.images.length} images:\n\n`;
+            crawlData.images.forEach((img, i) => {
+                imagesHTML += `[${i + 1}] ${img.src}\n    Alt: ${img.alt}\n\n`;
+            });
+            document.getElementById('imagesOutput').textContent = imagesHTML;
+
+            // Scroll to results
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showStatus(type, message) {
+            const status = document.getElementById('status');
+            status.className = 'status ' + type;
+            status.textContent = message;
+        }
+
+        function copyHTML() {
+            navigator.clipboard.writeText(currentHTML).then(() => {
+                showStatus('success', '✅ Đã copy HTML vào clipboard!');
+            }).catch(err => {
+                showStatus('error', '❌ Không thể copy: ' + err.message);
+            });
+        }
+
+        function downloadHTML() {
+            const blob = new Blob([currentHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'crawled_' + Date.now() + '.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            showStatus('success', '✅ Đã tải xuống HTML!');
+        }
+
+        function downloadJSON() {
+            const json = JSON.stringify(crawlData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'crawled_data_' + Date.now() + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showStatus('success', '✅ Đã tải xuống JSON!');
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
