@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Tools - OCR & Price Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00d4ff;
+            --secondary: #ff6b35;
+            --accent: #7c3aed;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --dark: #0a0e27;
+            --dark-light: #1a1f3e;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: #a8b2d1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, 
+                #0a0e27 0%, 
+                #1a1f3e 25%, 
+                #2d1b69 50%, 
+                #1a1f3e 75%, 
+                #0a0e27 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .floating-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.3), rgba(124, 58, 237, 0.1));
+            filter: blur(1px);
+            animation: float 20s infinite linear;
+        }
+
+        .orb:nth-child(1) { width: 200px; height: 200px; top: 10%; left: 80%; animation-delay: 0s; }
+        .orb:nth-child(2) { width: 150px; height: 150px; top: 60%; left: 10%; animation-delay: 7s; }
+        .orb:nth-child(3) { width: 100px; height: 100px; top: 30%; left: 50%; animation-delay: 14s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(120deg); }
+            66% { transform: translateY(20px) rotate(240deg); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .main-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientText 3s ease infinite;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+        }
+
+        @keyframes gradientText {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .tool-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.1);
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+            background-size: 200% 100%;
+            animation: shimmer 2s ease infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: -200% 0; }
+            50% { background-position: 200% 0; }
+        }
+
+        .tool-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .tool-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            margin-right: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .ocr-icon { background: linear-gradient(135deg, var(--accent), var(--primary)); }
+        .btc-icon { background: linear-gradient(135deg, var(--secondary), var(--warning)); }
+        .crypto-icon { background: linear-gradient(135deg, var(--success), var(--primary)); }
+
+        .tool-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--glass-border);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--secondary);
+            background: rgba(255, 107, 53, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .result-area {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 100px;
+            display: none;
+        }
+
+        .result-area.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .crypto-input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .crypto-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .crypto-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .price-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .price-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .price-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .price-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .price-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .positive { color: var(--success); }
+        .negative { color: var(--error); }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+
+        .success-message {
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .tools-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .tool-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-orbs">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="main-title">CRYPTO TOOLS</h1>
+            <p class="subtitle">Advanced OCR & Cryptocurrency Price Tracking</p>
+        </header>
+
+        <div class="tools-grid">
+            <!-- Image to Text OCR -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon ocr-icon">📸</div>
+                    <div class="tool-title">Image to Text OCR</div>
+                </div>
+                
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-text">
+                        <p>Kéo thả ảnh vào đây hoặc click để chọn file</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Hỗ trợ JPG, PNG (tối đa 5MB)</p>
+                    </div>
+                    <input type="file" id="imageInput" class="file-input" accept="image/*">
+                    <button type="button" class="btn" onclick="document.getElementById('imageInput').click()">
+                        Chọn ảnh
+                    </button>
+                </div>
+
+                <div class="result-area" id="ocrResult">
+                    <h4>Văn bản được trích xuất:</h4>
+                    <div id="extractedText"></div>
+                </div>
+            </div>
+
+            <!-- Bitcoin Price -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon btc-icon">₿</div>
+                    <div class="tool-title">Bitcoin Price Tracker</div>
+                </div>
+                
+                <button class="btn" onclick="getBitcoinPrice()" style="width: 100%; margin-bottom: 1rem;">
+                    Lấy giá Bitcoin hiện tại
+                </button>
+
+                <div class="result-area" id="btcResult">
+                    <div class="price-display" id="btcPriceDisplay"></div>
+                </div>
+            </div>
+
+            <!-- Crypto Price -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon crypto-icon">💎</div>
+                    <div class="tool-title">Cryptocurrency Tracker</div>
+                </div>
+                
+                <input type="text" 
+                       class="crypto-input" 
+                       id="cryptoSymbol" 
+                       placeholder="Nhập symbol (VD: ETHUSD, BNBUSD, ADAUSD)"
+                       onkeypress="handleCryptoEnter(event)">
+                
+                <button class="btn" onclick="getCryptoPrice()" style="width: 100%; margin-bottom: 1rem;">
+                    Lấy giá Crypto
+                </button>
+
+                <div class="result-area" id="cryptoResult">
+                    <div class="price-display" id="cryptoPriceDisplay"></div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>© 2025 Crypto Tools - Powered by API Ninjas</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">Dữ liệu được cập nhật theo thời gian thực</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_KEY = 'rkwBKQ5DmMO8wLw0jtx6Pw==6Gi0Qjak0zvlzfmm';
+        const API_BASE = 'https://api.api-ninjas.com/v1';
+
+        // OCR Functionality
+        const uploadZone = document.getElementById('uploadZone');
+        const imageInput = document.getElementById('imageInput');
+        const ocrResult = document.getElementById('ocrResult');
+        const extractedText = document.getElementById('extractedText');
+
+        // Drag and drop handlers
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleImageUpload(files[0]);
+            }
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleImageUpload(e.target.files[0]);
+            }
+        });
+
+        async function handleImageUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('extractedText', 'Vui lòng chọn file ảnh hợp lệ!');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                showError('extractedText', 'File quá lớn! Vui lòng chọn file dưới 5MB.');
+                return;
+            }
+
+            showLoading('extractedText');
+            ocrResult.classList.add('show');
+
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const response = await fetch(`${API_BASE}/imagetotext`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayOCRResult(data);
+            } catch (error) {
+                console.error('OCR Error:', error);
+                showError('extractedText', 'Không thể xử lý ảnh. Vui lòng thử lại!');
+            }
+        }
+
+        function displayOCRResult(data) {
+            if (!data || data.length === 0) {
+                extractedText.innerHTML = '<p style="color: var(--warning);">Không tìm thấy văn bản trong ảnh.</p>';
+                return;
+            }
+
+            const textContent = data.map(item => item.text).join(' ');
+            
+            extractedText.innerHTML = `
+                <div class="success-message">
+                    <h5>Văn bản được tìm thấy:</h5>
+                    <p style="margin-top: 0.5rem; line-height: 1.6; white-space: pre-wrap;">${textContent}</p>
+                    <button class="btn" onclick="copyText('${textContent.replace(/'/g, "\\'")}')">
+                        📋 Sao chép văn bản
+                    </button>
+                </div>
+                <details style="margin-top: 1rem;">
+                    <summary style="cursor: pointer; color: var(--text-secondary);">Chi tiết phát hiện (${data.length} vùng văn bản)</summary>
+                    <div style="margin-top: 1rem;">
+                        ${data.map((item, index) => `
+                            <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                                <strong>Vùng ${index + 1}:</strong> "${item.text}"
+                                <br><small style="color: var(--text-secondary);">
+                                    Vị trí: (${item.bounding_box.x1}, ${item.bounding_box.y1}) → (${item.bounding_box.x2}, ${item.bounding_box.y2})
+                                </small>
+                            </div>
+                        `).join('')}
+                    </div>
+                </details>
+            `;
+        }
+
+        // Bitcoin Price Functionality
+        async function getBitcoinPrice() {
+            const btcResult = document.getElementById('btcResult');
+            const btcPriceDisplay = document.getElementById('btcPriceDisplay');
+            
+            showLoading('btcPriceDisplay');
+            btcResult.classList.add('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/bitcoin`, {
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayBitcoinPrice(data);
+            } catch (error) {
+                console.error('Bitcoin API Error:', error);
+                showError('btcPriceDisplay', 'Không thể lấy dữ liệu Bitcoin. Vui lòng thử lại!');
+            }
+        }
+
+        function displayBitcoinPrice(data) {
+            const changeClass = parseFloat(data['24h_price_change']) >= 0 ? 'positive' : 'negative';
+            const changeIcon = parseFloat(data['24h_price_change']) >= 0 ? '↗' : '↘';
+            
+            document.getElementById('btcPriceDisplay').innerHTML = `
+                <div class="price-item">
+                    <div class="price-label">Giá hiện tại</div>
+                    <div class="price-value">$${parseFloat(data.price).toLocaleString()}</div>
+                </div>
+                <div class="price-item">
+                    <div class="price-label">Thay đổi 24h</div>
+                    <div class="price-value ${changeClass}">
+                        ${changeIcon} $${Math.abs(parseFloat(data['24h_price_change'])).toLocaleString()} (${data['24h_price_change_percent']}%)
+                    </div>
+                </div>
+                <div class="price-item">
+                    <div class="price-label">Cao nhất 24h</div>
+                    <div class="price-value">$${parseFloat(data['24h_high']).toLocaleString()}</div>
+                </div>
+                <div class="price-item">
+                    <div class="price-label">Thấp nhất 24h</div>
+                    <div class="price-value">$${parseFloat(data['24h_low']).toLocaleString()}</div>
+                </div>
+                <div class="price-item">
+                    <div class="price-label">Volume 24h</div>
+                    <div class="price-value">${parseFloat(data['24h_volume']).toLocaleString()} BTC</div>
+                </div>
+                <div class="price-item">
+                    <div class="price-label">Cập nhật</div>
+                    <div class="price-value">${new Date(data.timestamp * 1000).toLocaleString('vi-VN')}</div>
+                </div>
+            `;
+        }
+
+        // Crypto Price Functionality
+        function handleCryptoEnter(event) {
+            if (event.key === 'Enter') {
+                getCryptoPrice();
+            }
+        }
+
+        async function getCryptoPrice() {
+            const symbol = document.getElementById('cryptoSymbol').value.trim().toUpperCase();
+            const cryptoResult = document.getElementById('cryptoResult');
+            const cryptoPriceDisplay = document.getElementById('cryptoPriceDisplay');
+
+            if (!symbol) {
+                showError('cryptoPriceDisplay', 'Vui lòng nhập symbol cryptocurrency!');
+                cryptoResult.classList.add('show');
+                return;
+            }
+
+            showLoading('cryptoPriceDisplay');
+            cryptoResult.classList.add('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/cryptoprice?symbol=${symbol}`, {
+                    headers: {
+                        'X-Api-Key': API_KEY
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayCryptoPrice(data);
+            } catch (error) {
+                console.error('Crypto API Error:', error);
+                showError('cryptoPriceDisplay', `Không thể lấy dữ liệu cho ${symbol}. Vui lòng kiểm tra symbol và thử lại!`);
+            }
+        }
+
+        function displayCryptoPrice(data) {
+            if (!data.symbol || !data.price) {
+                showError('cryptoPriceDisplay', 'Không tìm thấy dữ liệu cho symbol này!');
+                return;
+            }
+
+            document.getElementById('cryptoPriceDisplay').innerHTML = `
+                <div class="success-message">
+                    <div class="price-item">
+                        <div class="price-label">Symbol</div>
+                        <div class="price-value">${data.symbol}</div>
+                    </div>
+                    <div class="price-item">
+                        <div class="price-label">Giá hiện tại</div>
+                        <div class="price-value">${parseFloat(data.price).toFixed(8)}</div>
+                    </div>
+                    <div class="price-item">
+                        <div class="price-label">Cập nhật</div>
+                        <div class="price-value">${new Date(data.timestamp * 1000).toLocaleString('vi-VN')}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Utility Functions
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = '<div style="text-align: center;"><div class="loading"></div><p style="margin-top: 1rem;">Đang xử lý...</p></div>';
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = `<div class="error-message">${message}</div>`;
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success feedback
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ Đã sao chép!';
+                btn.style.background = 'linear-gradient(135deg, var(--success), var(--success))';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Copy failed:', err);
+            });
+        }
+
+        // Auto-refresh Bitcoin price every 30 seconds
+        let btcAutoRefresh;
+        
+        function startBitcoinAutoRefresh() {
+            btcAutoRefresh = setInterval(() => {
+                if (document.getElementById('btcResult').classList.contains('show')) {
+                    getBitcoinPrice();
+                }
+            }, 30000); // 30 seconds
+        }
+
+        // Start auto-refresh when page loads
+        window.addEventListener('load', () => {
+            startBitcoinAutoRefresh();
+        });
+
+        // Popular crypto shortcuts
+        function addPopularCryptos() {
+            const cryptoCard = document.querySelector('.crypto-icon').closest('.tool-card');
+            const shortcuts = document.createElement('div');
+            shortcuts.innerHTML = `
+                <div style="margin: 1rem 0;">
+                    <p style="margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Crypto phổ biến:</p>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        ${['ETHUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD', 'SOLUSD', 'DOTUSD'].map(symbol => `
+                            <button class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.8rem;" onclick="quickCrypto('${symbol}')">
+                                ${symbol.replace('USD', '')}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            cryptoCard.insertBefore(shortcuts, cryptoCard.querySelector('.crypto-input').nextSibling);
+        }
+
+        function quickCrypto(symbol) {
+            document.getElementById('cryptoSymbol').value = symbol;
+            getCryptoPrice();
+        }
+
+        // Add shortcuts when page loads
+        window.addEventListener('load', addPopularCryptos);
+    </script>
+</body>
+</html>
