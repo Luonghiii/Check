@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Live Checker</title>
+    <title>Email Live Checker - Proxy Version</title>
     <style>
         * {
             margin: 0;
@@ -46,6 +46,24 @@
         .header p {
             color: #666;
             font-size: 1.1rem;
+        }
+
+        .api-info {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .api-info h4 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .api-info p {
+            color: #666;
+            font-size: 0.9rem;
         }
 
         .input-section {
@@ -119,6 +137,8 @@
             transition: all 0.3s ease;
             font-weight: 600;
             min-width: 150px;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
 
         .btn:hover {
@@ -131,6 +151,17 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
         }
 
         .loading {
@@ -270,14 +301,19 @@
             flex-wrap: wrap;
         }
 
-        .btn-secondary {
-            background: #f5f5f5;
-            color: #333;
+        .mode-selector {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
             border: 2px solid #e0e0e0;
         }
 
-        .btn-secondary:hover {
-            background: #e0e0e0;
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
         }
 
         @media (max-width: 768px) {
@@ -305,7 +341,23 @@
     <div class="container">
         <div class="header">
             <h1>📧 Email Live Checker</h1>
-            <p>Kiểm tra tình trạng email nhanh chóng và chính xác</p>
+            <p>Kiểm tra tình trạng email nhanh chóng và chính xác với proxy API</p>
+        </div>
+
+        <div class="api-info">
+            <h4>🔧 Thông tin kỹ thuật:</h4>
+            <p>Sử dụng proxy API tại <strong>api-beta-app.vercel.app</strong> để bypass CORS policy. Sẵn sàng sử dụng!</p>
+        </div>
+
+        <div class="mode-selector">
+            <label><strong>Chế độ hoạt động:</strong></label>
+            <div class="mode-buttons">
+                <button class="btn" onclick="setMode('proxy')" id="proxyMode">🌐 Proxy Mode (Recommended)</button>
+                <button class="btn btn-secondary" onclick="setMode('direct')" id="directMode">🔗 Direct Mode (Test)</button>
+            </div>
+            <p id="modeDescription" style="margin-top: 10px; color: #666; font-size: 0.9rem;">
+                Proxy mode: Sử dụng proxy API tại api-beta-app.vercel.app (Recommended)
+            </p>
         </div>
 
         <div class="input-section">
@@ -327,6 +379,7 @@
             <button class="btn" onclick="checkEmails()">
                 <span id="btnText">🚀 Kiểm tra Email</span>
             </button>
+            <button class="btn btn-secondary" onclick="loadSampleEmails()">📝 Load Email mẫu</button>
         </div>
 
         <div class="loading" id="loading">
@@ -353,6 +406,21 @@
 
     <script>
         let currentResults = [];
+        let currentMode = 'proxy';
+
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Update button styles
+            document.getElementById('proxyMode').className = mode === 'proxy' ? 'btn' : 'btn btn-secondary';
+            document.getElementById('directMode').className = mode === 'direct' ? 'btn' : 'btn btn-secondary';
+            
+            // Update description
+            const description = mode === 'proxy' 
+                ? 'Proxy mode: Sử dụng proxy API tại api-beta-app.vercel.app (Recommended)'
+                : 'Direct mode: Gọi trực tiếp API (có thể bị lỗi CORS nếu chạy từ browser)';
+            document.getElementById('modeDescription').textContent = description;
+        }
 
         async function checkEmails() {
             const apiKey = document.getElementById('apiKey').value.trim();
@@ -394,18 +462,37 @@
                     emails: emails
                 };
 
-                const response = await fetch('https://checkmail.live/check/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
-                });
+                let apiUrl;
+                let fetchOptions;
 
+                if (currentMode === 'proxy') {
+                    // Use your deployed proxy API
+                    apiUrl = 'https://api-beta-app.vercel.app/api/maillod';
+                    fetchOptions = {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData)
+                    };
+                } else {
+                    // Direct API call (will likely fail due to CORS)
+                    apiUrl = 'https://checkmail.live/check/';
+                    fetchOptions = {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData),
+                        mode: 'cors'
+                    };
+                }
+
+                const response = await fetch(apiUrl, fetchOptions);
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.message || 'Lỗi khi gọi API');
+                    throw new Error(result.message || result.error || 'Lỗi khi gọi API');
                 }
 
                 if (result.status && result.data) {
@@ -416,7 +503,15 @@
                 }
 
             } catch (error) {
-                showError('Lỗi: ' + error.message);
+                let errorMessage = error.message;
+                
+                if (error.message.includes('CORS') || error.message.includes('blocked')) {
+                    errorMessage = 'Lỗi CORS: Vui lòng sử dụng Proxy Mode và deploy project lên Vercel';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Không thể kết nối đến API. Kiểm tra mạng hoặc thử Proxy Mode';
+                }
+                
+                showError('Lỗi: ' + errorMessage);
             } finally {
                 hideLoading();
             }
@@ -557,20 +652,22 @@
             document.getElementById('error').style.display = 'none';
         }
 
-        // Sample emails for testing
         function loadSampleEmails() {
             const sampleEmails = [
                 'test1@gmail.com',
-                'test2@gmail.com',
+                'test2@gmail.com', 
                 'test3@yahoo.com',
                 'test4@outlook.com',
-                'test5@hotmail.com'
+                'test5@hotmail.com',
+                'invalid-email@nonexist.xyz',
+                'sample@example.com'
             ];
             document.getElementById('emailList').value = sampleEmails.join('\n');
         }
 
-        // Auto-load sample emails on page load
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            setMode('proxy');
             loadSampleEmails();
         });
     </script>
