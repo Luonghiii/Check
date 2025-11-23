@@ -474,8 +474,14 @@
     </div>
 
     <script>
+        // API Ninjas for crypto data
         const API_KEY = 'rkwBKQ5DmMO8wLw0jtx6Pw==6Gi0Qjak0zvlzfmm';
         const API_BASE = 'https://api.api-ninjas.com/v1';
+        
+        // ImageToText.com API for OCR
+        const OCR_API_KEY = '322c9f50-c863-11f0-a2aa-10bf487fdf8e';
+        const OCR_API_SECRET = '322c9f68-c863-11f0-a2aa-10bf487fdf8e';
+        const OCR_API_URL = 'https://www.imagetotext.com/api/ocr';
 
         // OCR Functionality
         const uploadZone = document.getElementById('uploadZone');
@@ -523,58 +529,68 @@
             ocrResult.classList.add('show');
 
             try {
-                const formData = new FormData();
-                formData.append('image', file);
+                // Convert image to base64
+                const base64Image = await convertToBase64(file);
+                
+                const requestData = {
+                    api_key: OCR_API_KEY,
+                    api_secret: OCR_API_SECRET,
+                    image: base64Image
+                };
 
-                const response = await fetch(`${API_BASE}/imagetotext`, {
+                const response = await fetch(OCR_API_URL, {
                     method: 'POST',
                     headers: {
-                        'X-Api-Key': API_KEY
+                        'Content-Type': 'application/json; charset=utf-8'
                     },
-                    body: formData
+                    body: JSON.stringify(requestData)
                 });
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const data = await response.json();
-                displayOCRResult(data);
+                const extractedText = await response.text();
+                displayOCRResult(extractedText);
             } catch (error) {
                 console.error('OCR Error:', error);
                 showError('extractedText', 'Không thể xử lý ảnh. Vui lòng thử lại!');
             }
         }
 
-        function displayOCRResult(data) {
-            if (!data || data.length === 0) {
-                extractedText.innerHTML = '<p style="color: var(--warning);">Không tìm thấy văn bản trong ảnh.</p>';
+        // Helper function to convert file to base64
+        function convertToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // Remove the data URL prefix (data:image/jpeg;base64,)
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = () => reject(new Error('Failed to convert file to base64'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function displayOCRResult(extractedText) {
+            if (!extractedText || extractedText.trim() === '' || extractedText.includes('No text found')) {
+                document.getElementById('extractedText').innerHTML = '<p style="color: var(--warning);">Không tìm thấy văn bản trong ảnh.</p>';
                 return;
             }
 
-            const textContent = data.map(item => item.text).join(' ');
+            // Clean up the extracted text
+            const cleanedText = extractedText.trim();
             
-            extractedText.innerHTML = `
+            document.getElementById('extractedText').innerHTML = `
                 <div class="success-message">
-                    <h5>Văn bản được tìm thấy:</h5>
-                    <p style="margin-top: 0.5rem; line-height: 1.6; white-space: pre-wrap;">${textContent}</p>
-                    <button class="btn" onclick="copyText('${textContent.replace(/'/g, "\\'")}')">
+                    <h5>Văn bản được trích xuất:</h5>
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid var(--primary);">
+                        <p style="line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary);">${cleanedText}</p>
+                    </div>
+                    <button class="btn" onclick="copyText('${cleanedText.replace(/'/g, "\\'")}')">
                         📋 Sao chép văn bản
                     </button>
                 </div>
-                <details style="margin-top: 1rem;">
-                    <summary style="cursor: pointer; color: var(--text-secondary);">Chi tiết phát hiện (${data.length} vùng văn bản)</summary>
-                    <div style="margin-top: 1rem;">
-                        ${data.map((item, index) => `
-                            <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                                <strong>Vùng ${index + 1}:</strong> "${item.text}"
-                                <br><small style="color: var(--text-secondary);">
-                                    Vị trí: (${item.bounding_box.x1}, ${item.bounding_box.y1}) → (${item.bounding_box.x2}, ${item.bounding_box.y2})
-                                </small>
-                            </div>
-                        `).join('')}
-                    </div>
-                </details>
             `;
         }
 
