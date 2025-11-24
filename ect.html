@@ -57,6 +57,7 @@
             transition: all 0.1s ease;
             box-shadow: 0 0 20px rgba(255,255,255,0.5);
             background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            display: none;
         }
 
         #cursor.clicking {
@@ -237,28 +238,60 @@
         let lastBlinkTime = 0;
         const BLINK_THRESHOLD = 0.15;
         const BLINK_COOLDOWN = 500; // ms
+        let isModelLoaded = false;
+        let isVideoReady = false;
 
         // Khởi tạo webcam
         async function setupWebcam() {
+            console.log('Setting up webcam...');
             const video = document.getElementById('webcam');
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: 640, height: 480 }
-            });
-            video.srcObject = stream;
             
-            return new Promise((resolve) => {
-                video.onloadedmetadata = () => {
-                    resolve(video);
-                };
-            });
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        width: 640, 
+                        height: 480,
+                        facingMode: 'user'
+                    }
+                });
+                video.srcObject = stream;
+                
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        console.log('Webcam ready');
+                        isVideoReady = true;
+                        resolve(video);
+                    };
+                });
+            } catch (err) {
+                console.error('Webcam error:', err);
+                throw new Error('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập!');
+            }
         }
 
         // Khởi tạo FaceMesh model
         async function loadModel() {
-            model = await facemesh.load({
-                maxFaces: 1
-            });
-            console.log('FaceMesh model loaded');
+            console.log('Loading FaceMesh model...');
+            document.getElementById('loading').innerHTML = `
+                <div class="spinner"></div>
+                <p>Đang tải mô hình AI...</p>
+                <p style="font-size: 14px; opacity: 0.7;">Có thể mất 10-30 giây</p>
+            `;
+            
+            try {
+                model = await facemesh.load({
+                    maxFaces: 1,
+                    detectionConfidence: 0.9,
+                    iouThreshold: 0.3,
+                    scoreThreshold: 0.75
+                });
+                console.log('FaceMesh model loaded successfully!');
+                isModelLoaded = true;
+            } catch (err) {
+                console.error('Model loading error:', err);
+                throw new Error('Không thể tải mô hình AI. Vui lòng thử lại!');
+            }
         }
 
         // Tính khoảng cách giữa 2 điểm
@@ -319,45 +352,64 @@
 
         // Detect faces và cập nhật vị trí cursor
         async function detectFaces() {
+            if (!isModelLoaded || !isVideoReady) {
+                console.log('Waiting for model and video...');
+                setTimeout(detectFaces, 100);
+                return;
+            }
+
             const video = document.getElementById('webcam');
-            const predictions = await model.estimateFaces(video);
             
-            if (predictions.length > 0) {
-                const keypoints = predictions[0].scaledMesh;
+            try {
+                const predictions = await model.estimateFaces({
+                    input: video,
+                    returnTensors: false,
+                    flipHorizontal: false,
+                    predictIrises: false
+                });
                 
-                // Sử dụng điểm giữa 2 mắt để điều khiển cursor
-                // Left eye center: 468, Right eye center: 473
-                const leftEye = keypoints[468];
-                const rightEye = keypoints[473];
-                
-                // Tính trung điểm giữa 2 mắt
-                const eyeCenterX = (leftEye[0] + rightEye[0]) / 2;
-                const eyeCenterY = (leftEye[1] + rightEye[1]) / 2;
-                
-                // Map vị trí từ video (640x480) sang màn hình
-                const screenX = window.innerWidth - (eyeCenterX / 640) * window.innerWidth;
-                const screenY = (eyeCenterY / 480) * window.innerHeight;
-                
-                // Cập nhật vị trí cursor
-                cursor.style.left = screenX + 'px';
-                cursor.style.top = screenY + 'px';
-                cursor.style.transform = 'translate(-50%, -50%)';
-                
-                // Phát hiện nháy mắt
-                const isBlink = detectBlink(keypoints);
-                
-                if (isBlink && !blinkDetected) {
-                    blinkDetected = true;
-                    triggerClick(screenX, screenY);
-                } else if (!isBlink) {
-                    blinkDetected = false;
+                if (predictions.length > 0) {
+                    const keypoints = predictions[0].scaledMesh;
+                    
+                    // Sử dụng điểm giữa 2 mắt để điều khiển cursor
+                    // Left eye center: 468, Right eye center: 473
+                    const leftEye = keypoints[468];
+                    const rightEye = keypoints[473];
+                    
+                    // Tính trung điểm giữa 2 mắt
+                    const eyeCenterX = (leftEye[0] + rightEye[0]) / 2;
+                    const eyeCenterY = (leftEye[1] + rightEye[1]) / 2;
+                    
+                    // Map vị trí từ video (640x480) sang màn hình
+                    const screenX = window.innerWidth - (eyeCenterX / 640) * window.innerWidth;
+                    const screenY = (eyeCenterY / 480) * window.innerHeight;
+                    
+                    // Cập nhật vị trí cursor
+                    cursor.style.left = screenX + 'px';
+                    cursor.style.top = screenY + 'px';
+                    cursor.style.transform = 'translate(-50%, -50%)';
+                    cursor.style.display = 'block';
+                    
+                    // Phát hiện nháy mắt
+                    const isBlink = detectBlink(keypoints);
+                    
+                    if (isBlink && !blinkDetected) {
+                        blinkDetected = true;
+                        triggerClick(screenX, screenY);
+                    } else if (!isBlink) {
+                        blinkDetected = false;
+                    }
+                    
+                    // Cập nhật status
+                    document.getElementById('trackingStatus').textContent = 'Hoạt động';
+                    document.getElementById('trackingIndicator').className = 'indicator active';
+                } else {
+                    document.getElementById('trackingStatus').textContent = 'Không phát hiện khuôn mặt';
+                    document.getElementById('trackingIndicator').className = 'indicator inactive';
                 }
-                
-                // Cập nhật status
-                document.getElementById('trackingStatus').textContent = 'Hoạt động';
-                document.getElementById('trackingIndicator').className = 'indicator active';
-            } else {
-                document.getElementById('trackingStatus').textContent = 'Không phát hiện';
+            } catch (err) {
+                console.error('Detection error:', err);
+                document.getElementById('trackingStatus').textContent = 'Lỗi: ' + err.message;
                 document.getElementById('trackingIndicator').className = 'indicator inactive';
             }
             
@@ -367,29 +419,48 @@
         // Khởi động app
         async function init() {
             try {
+                console.log('Initializing app...');
+                
+                // Step 1: Setup webcam
+                console.log('Step 1: Setting up webcam...');
                 await setupWebcam();
+                document.getElementById('videoContainer').style.display = 'block';
+                
+                // Step 2: Load model
+                console.log('Step 2: Loading AI model...');
                 await loadModel();
                 
-                // Ẩn loading, hiện UI
+                // Step 3: Ẩn loading, hiện UI
+                console.log('Step 3: Showing UI...');
                 document.getElementById('loading').style.display = 'none';
-                document.getElementById('videoContainer').style.display = 'block';
                 document.getElementById('status').style.display = 'block';
                 document.getElementById('playground').style.display = 'grid';
                 document.getElementById('instructions').style.display = 'block';
                 
-                // Bắt đầu detection
+                // Step 4: Bắt đầu detection
+                console.log('Step 4: Starting face detection...');
+                cursor.style.display = 'none'; // Ẩn cursor ban đầu
                 detectFaces();
+                
+                console.log('✅ App initialized successfully!');
             } catch (error) {
-                console.error('Error:', error);
+                console.error('❌ Init error:', error);
                 document.getElementById('loading').innerHTML = `
                     <p style="color: #ff6b6b;">❌ Lỗi: ${error.message}</p>
-                    <p style="font-size: 14px; margin-top: 10px;">Vui lòng cho phép truy cập camera</p>
+                    <p style="font-size: 14px; margin-top: 10px;">Vui lòng:</p>
+                    <p style="font-size: 14px;">1. Cho phép truy cập camera</p>
+                    <p style="font-size: 14px;">2. Sử dụng trình duyệt Chrome/Edge</p>
+                    <p style="font-size: 14px;">3. Tải lại trang (F5)</p>
+                    <button onclick="location.reload()" style="margin-top: 15px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Tải lại trang</button>
                 `;
             }
         }
 
         // Chạy khi trang load xong
-        init();
+        window.addEventListener('load', () => {
+            console.log('Page loaded, starting init...');
+            init();
+        });
     </script>
 </body>
 </html>
