@@ -361,12 +361,7 @@
             const video = document.getElementById('webcam');
             
             try {
-                const predictions = await model.estimateFaces({
-                    input: video,
-                    returnTensors: false,
-                    flipHorizontal: false,
-                    predictIrises: false
-                });
+                const predictions = await model.estimateFaces(video);
                 
                 if (predictions.length > 0) {
                     const keypoints = predictions[0].scaledMesh;
