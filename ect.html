@@ -304,13 +304,18 @@
 
         // Phát hiện nháy mắt
         function detectBlink(landmarks) {
-            // Left eye landmarks: 159 (top), 145 (bottom)
-            // Right eye landmarks: 386 (top), 374 (bottom)
+            // FaceMesh 468 điểm
+            // Left eye: top=159, bottom=145
+            // Right eye: top=386, bottom=374
             
             const leftEyeTop = landmarks[159];
             const leftEyeBottom = landmarks[145];
             const rightEyeTop = landmarks[386];
             const rightEyeBottom = landmarks[374];
+            
+            if (!leftEyeTop || !leftEyeBottom || !rightEyeTop || !rightEyeBottom) {
+                return false;
+            }
             
             const leftEyeHeight = distance(leftEyeTop, leftEyeBottom);
             const rightEyeHeight = distance(rightEyeTop, rightEyeBottom);
@@ -366,10 +371,21 @@
                 if (predictions.length > 0) {
                     const keypoints = predictions[0].scaledMesh;
                     
-                    // Sử dụng điểm giữa 2 mắt để điều khiển cursor
-                    // Left eye center: 468, Right eye center: 473
-                    const leftEye = keypoints[468];
-                    const rightEye = keypoints[473];
+                    console.log('Keypoints length:', keypoints.length); // Debug
+                    
+                    // FaceMesh trả về 468 điểm
+                    // Left eye: điểm 33, 133, 160, 159, 158, 157, 173
+                    // Right eye: điểm 362, 263, 387, 386, 385, 384, 398
+                    // Dùng điểm giữa mắt: 33 (left), 263 (right)
+                    
+                    const leftEye = keypoints[33];   // Left eye center
+                    const rightEye = keypoints[263]; // Right eye center
+                    
+                    if (!leftEye || !rightEye) {
+                        console.error('Eye points not found');
+                        requestAnimationFrame(detectFaces);
+                        return;
+                    }
                     
                     // Tính trung điểm giữa 2 mắt
                     const eyeCenterX = (leftEye[0] + rightEye[0]) / 2;
