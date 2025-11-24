@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Tracking Control</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/facemesh"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #videoContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 100;
+            border: 3px solid rgba(255,255,255,0.3);
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        #cursor {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1000;
+            transition: all 0.1s ease;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+        }
+
+        #cursor.clicking {
+            animation: clickPulse 0.3s ease;
+            background: radial-gradient(circle, rgba(255,100,100,0.5) 0%, transparent 70%);
+        }
+
+        @keyframes clickPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        #status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        #status h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        #status p {
+            color: #555;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .indicator.active {
+            background: #4ade80;
+            box-shadow: 0 0 10px #4ade80;
+        }
+
+        .indicator.inactive {
+            background: #f87171;
+        }
+
+        #playground {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: grid;
+            grid-template-columns: repeat(3, 150px);
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .target-box {
+            width: 150px;
+            height: 150px;
+            background: rgba(255,255,255,0.2);
+            border: 3px solid rgba(255,255,255,0.4);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .target-box:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .target-box.clicked {
+            animation: targetClick 0.5s ease;
+        }
+
+        @keyframes targetClick {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(0.9); background: rgba(100,255,100,0.5); }
+        }
+
+        #instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Đang tải mô hình AI...</p>
+        </div>
+
+        <div id="videoContainer" style="display: none;">
+            <video id="webcam" autoplay playsinline></video>
+        </div>
+
+        <div id="cursor"></div>
+
+        <div id="status" style="display: none;">
+            <h2>👁️ Eye Tracking Active</h2>
+            <p><span class="indicator inactive" id="trackingIndicator"></span>Tracking: <span id="trackingStatus">Chờ...</span></p>
+            <p>🖱️ Nhìn để di chuyển con trỏ</p>
+            <p>😉 Nháy mắt để click</p>
+            <p>Clicks: <strong id="clickCount">0</strong></p>
+        </div>
+
+        <div id="playground" style="display: none;">
+            <div class="target-box" data-emoji="🎯">🎯</div>
+            <div class="target-box" data-emoji="⭐">⭐</div>
+            <div class="target-box" data-emoji="💎">💎</div>
+            <div class="target-box" data-emoji="🎨">🎨</div>
+            <div class="target-box" data-emoji="🚀">🚀</div>
+            <div class="target-box" data-emoji="🎵">🎵</div>
+            <div class="target-box" data-emoji="🌈">🌈</div>
+            <div class="target-box" data-emoji="🔥">🔥</div>
+            <div class="target-box" data-emoji="✨">✨</div>
+        </div>
+
+        <div id="instructions" style="display: none;">
+            <strong>Hướng dẫn:</strong> Di chuyển mắt để điều khiển con trỏ | Nháy mắt để click vào các ô
+        </div>
+    </div>
+
+    <script>
+        let model;
+        let cursor = document.getElementById('cursor');
+        let clickCount = 0;
+        let blinkDetected = false;
+        let lastBlinkTime = 0;
+        const BLINK_THRESHOLD = 0.15;
+        const BLINK_COOLDOWN = 500; // ms
+
+        // Khởi tạo webcam
+        async function setupWebcam() {
+            const video = document.getElementById('webcam');
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { width: 640, height: 480 }
+            });
+            video.srcObject = stream;
+            
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    resolve(video);
+                };
+            });
+        }
+
+        // Khởi tạo FaceMesh model
+        async function loadModel() {
+            model = await facemesh.load({
+                maxFaces: 1
+            });
+            console.log('FaceMesh model loaded');
+        }
+
+        // Tính khoảng cách giữa 2 điểm
+        function distance(point1, point2) {
+            return Math.sqrt(
+                Math.pow(point1[0] - point2[0], 2) +
+                Math.pow(point1[1] - point2[1], 2)
+            );
+        }
+
+        // Phát hiện nháy mắt
+        function detectBlink(landmarks) {
+            // Left eye landmarks: 159 (top), 145 (bottom)
+            // Right eye landmarks: 386 (top), 374 (bottom)
+            
+            const leftEyeTop = landmarks[159];
+            const leftEyeBottom = landmarks[145];
+            const rightEyeTop = landmarks[386];
+            const rightEyeBottom = landmarks[374];
+            
+            const leftEyeHeight = distance(leftEyeTop, leftEyeBottom);
+            const rightEyeHeight = distance(rightEyeTop, rightEyeBottom);
+            
+            // Trung bình chiều cao 2 mắt
+            const avgEyeHeight = (leftEyeHeight + rightEyeHeight) / 2;
+            
+            return avgEyeHeight < BLINK_THRESHOLD;
+        }
+
+        // Trigger click event
+        function triggerClick(x, y) {
+            const now = Date.now();
+            if (now - lastBlinkTime < BLINK_COOLDOWN) return;
+            
+            lastBlinkTime = now;
+            clickCount++;
+            document.getElementById('clickCount').textContent = clickCount;
+            
+            // Visual feedback
+            cursor.classList.add('clicking');
+            setTimeout(() => cursor.classList.remove('clicking'), 300);
+            
+            // Kiểm tra xem có click vào target box nào không
+            const boxes = document.querySelectorAll('.target-box');
+            boxes.forEach(box => {
+                const rect = box.getBoundingClientRect();
+                if (x >= rect.left && x <= rect.right && 
+                    y >= rect.top && y <= rect.bottom) {
+                    box.classList.add('clicked');
+                    setTimeout(() => box.classList.remove('clicked'), 500);
+                    
+                    // Random emoji mới
+                    const emojis = ['🎯', '⭐', '💎', '🎨', '🚀', '🎵', '🌈', '🔥', '✨', '🎪', '🎭', '🎬', '🎮', '🏆', '💫'];
+                    box.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                }
+            });
+        }
+
+        // Detect faces và cập nhật vị trí cursor
+        async function detectFaces() {
+            const video = document.getElementById('webcam');
+            const predictions = await model.estimateFaces(video);
+            
+            if (predictions.length > 0) {
+                const keypoints = predictions[0].scaledMesh;
+                
+                // Sử dụng điểm giữa 2 mắt để điều khiển cursor
+                // Left eye center: 468, Right eye center: 473
+                const leftEye = keypoints[468];
+                const rightEye = keypoints[473];
+                
+                // Tính trung điểm giữa 2 mắt
+                const eyeCenterX = (leftEye[0] + rightEye[0]) / 2;
+                const eyeCenterY = (leftEye[1] + rightEye[1]) / 2;
+                
+                // Map vị trí từ video (640x480) sang màn hình
+                const screenX = window.innerWidth - (eyeCenterX / 640) * window.innerWidth;
+                const screenY = (eyeCenterY / 480) * window.innerHeight;
+                
+                // Cập nhật vị trí cursor
+                cursor.style.left = screenX + 'px';
+                cursor.style.top = screenY + 'px';
+                cursor.style.transform = 'translate(-50%, -50%)';
+                
+                // Phát hiện nháy mắt
+                const isBlink = detectBlink(keypoints);
+                
+                if (isBlink && !blinkDetected) {
+                    blinkDetected = true;
+                    triggerClick(screenX, screenY);
+                } else if (!isBlink) {
+                    blinkDetected = false;
+                }
+                
+                // Cập nhật status
+                document.getElementById('trackingStatus').textContent = 'Hoạt động';
+                document.getElementById('trackingIndicator').className = 'indicator active';
+            } else {
+                document.getElementById('trackingStatus').textContent = 'Không phát hiện';
+                document.getElementById('trackingIndicator').className = 'indicator inactive';
+            }
+            
+            requestAnimationFrame(detectFaces);
+        }
+
+        // Khởi động app
+        async function init() {
+            try {
+                await setupWebcam();
+                await loadModel();
+                
+                // Ẩn loading, hiện UI
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('videoContainer').style.display = 'block';
+                document.getElementById('status').style.display = 'block';
+                document.getElementById('playground').style.display = 'grid';
+                document.getElementById('instructions').style.display = 'block';
+                
+                // Bắt đầu detection
+                detectFaces();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').innerHTML = `
+                    <p style="color: #ff6b6b;">❌ Lỗi: ${error.message}</p>
+                    <p style="font-size: 14px; margin-top: 10px;">Vui lòng cho phép truy cập camera</p>
+                `;
+            }
+        }
+
+        // Chạy khi trang load xong
+        init();
+    </script>
+</body>
+</html>
