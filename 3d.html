@@ -168,6 +168,11 @@
         let prevHandX = 0, prevHandY = 0;
         let isPinching = false;
         let isHandOpen = false;
+        
+        // Virtual hand
+        let virtualHand = null;
+        let handSpheres = [];
+        let handLines = [];
 
         function initThreeJS() {
             scene = new THREE.Scene();
@@ -316,6 +321,120 @@
             scene.add(particles);
         }
 
+        function createVirtualHand() {
+            // Create group for hand
+            virtualHand = new THREE.Group();
+            scene.add(virtualHand);
+
+            // Create 21 spheres for hand landmarks
+            for (let i = 0; i < 21; i++) {
+                const geometry = new THREE.SphereGeometry(0.1, 16, 16);
+                let color = 0x00ff88;
+                
+                // Different colors for different parts
+                if (i === 4) color = 0xff0088; // Thumb tip
+                if (i === 8) color = 0x00ffff; // Index tip
+                if (i === 0) color = 0xffaa00; // Wrist
+                
+                const material = new THREE.MeshBasicMaterial({ 
+                    color: color,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+                virtualHand.add(sphere);
+                handSpheres.push(sphere);
+            }
+
+            // Create lines connecting hand landmarks
+            const handConnections = [
+                // Thumb
+                [0, 1], [1, 2], [2, 3], [3, 4],
+                // Index
+                [0, 5], [5, 6], [6, 7], [7, 8],
+                // Middle
+                [0, 9], [9, 10], [10, 11], [11, 12],
+                // Ring
+                [0, 13], [13, 14], [14, 15], [15, 16],
+                // Pinky
+                [0, 17], [17, 18], [18, 19], [19, 20],
+                // Palm
+                [5, 9], [9, 13], [13, 17]
+            ];
+
+            handConnections.forEach(() => {
+                const geometry = new THREE.BufferGeometry();
+                const material = new THREE.LineBasicMaterial({ 
+                    color: 0x00ff88,
+                    transparent: true,
+                    opacity: 0.6,
+                    linewidth: 2
+                });
+                const line = new THREE.Line(geometry, material);
+                virtualHand.add(line);
+                handLines.push(line);
+            });
+        }
+
+        function updateVirtualHand(landmarks) {
+            if (!virtualHand) {
+                createVirtualHand();
+            }
+
+            // Update sphere positions
+            landmarks.forEach((landmark, i) => {
+                if (handSpheres[i]) {
+                    // Convert normalized coordinates to 3D space
+                    handSpheres[i].position.x = (landmark.x - 0.5) * 20;
+                    handSpheres[i].position.y = -(landmark.y - 0.5) * 15;
+                    handSpheres[i].position.z = -landmark.z * 10 + 5;
+                    
+                    // Make thumb and index tips glow when pinching
+                    if ((i === 4 || i === 8) && isPinching) {
+                        handSpheres[i].scale.set(1.5, 1.5, 1.5);
+                    } else {
+                        handSpheres[i].scale.set(1, 1, 1);
+                    }
+                }
+            });
+
+            // Update line positions
+            const handConnections = [
+                [0, 1], [1, 2], [2, 3], [3, 4],
+                [0, 5], [5, 6], [6, 7], [7, 8],
+                [0, 9], [9, 10], [10, 11], [11, 12],
+                [0, 13], [13, 14], [14, 15], [15, 16],
+                [0, 17], [17, 18], [18, 19], [19, 20],
+                [5, 9], [9, 13], [13, 17]
+            ];
+
+            handConnections.forEach((connection, i) => {
+                if (handLines[i]) {
+                    const [start, end] = connection;
+                    const positions = new Float32Array([
+                        handSpheres[start].position.x,
+                        handSpheres[start].position.y,
+                        handSpheres[start].position.z,
+                        handSpheres[end].position.x,
+                        handSpheres[end].position.y,
+                        handSpheres[end].position.z
+                    ]);
+                    handLines[i].geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    
+                    // Highlight when pinching
+                    if (isPinching && (connection[0] === 4 || connection[1] === 4 || connection[0] === 8 || connection[1] === 8)) {
+                        handLines[i].material.color.setHex(0xffff00);
+                        handLines[i].material.opacity = 1;
+                    } else {
+                        handLines[i].material.color.setHex(0x00ff88);
+                        handLines[i].material.opacity = 0.6;
+                    }
+                }
+            });
+
+            virtualHand.visible = true;
+        }
+
         function animate() {
             requestAnimationFrame(animate);
 
@@ -360,6 +479,9 @@
         function onResults(results) {
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const landmarks = results.multiHandLandmarks[0];
+                
+                // Update virtual hand visualization
+                updateVirtualHand(landmarks);
                 
                 // Get key points
                 const thumb = landmarks[4];
@@ -449,6 +571,12 @@
 
                 prevHandX = handX;
                 prevHandY = handY;
+            } else {
+                // Hide virtual hand when no hand detected
+                if (virtualHand) {
+                    virtualHand.visible = false;
+                }
+                updateGestureStatus('❌ Không phát hiện bàn tay');
             }
         }
 
