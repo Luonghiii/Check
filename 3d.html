@@ -136,21 +136,21 @@
 
     <div id="controls-info">
         <h3>🎮 Điều khiển</h3>
+        <div class="control-item" style="background: rgba(255, 215, 0, 0.2); border-left-color: #ffd700;">
+            <strong>👐 2 TAY - Điều khiển quả cầu</strong>
+            Kéo rộng/thu nhỏ 2 tay để tách/hợp quả cầu
+        </div>
         <div class="control-item">
-            <strong>👌 Chụm 2 ngón (Thumb + Index)</strong>
+            <strong>👌 Chụm 2 ngón (1 tay)</strong>
             Chọn & tương tác vật thể
         </div>
         <div class="control-item">
-            <strong>✋ Bàn tay mở</strong>
+            <strong>✋ Bàn tay mở (1 tay)</strong>
             Xoay camera xung quanh
         </div>
         <div class="control-item">
-            <strong>👆 Vuốt lên/xuống</strong>
+            <strong>👆 Vuốt lên/xuống (1 tay)</strong>
             Di chuyển gần/xa
-        </div>
-        <div class="control-item">
-            <strong>👈 Vuốt trái/phải</strong>
-            Di chuyển ngang
         </div>
     </div>
 
@@ -169,10 +169,19 @@
         let isPinching = false;
         let isHandOpen = false;
         
-        // Virtual hand
-        let virtualHand = null;
-        let handSpheres = [];
-        let handLines = [];
+        // Virtual hands (support 2 hands)
+        let virtualHands = [null, null];
+        let handSpheres = [[], []];
+        let handLines = [[], []];
+        
+        // Tech sphere
+        let techSphere = null;
+        let sphereParts = [];
+        let isSphereExpanded = false;
+        let sphereTargetScale = 1;
+        let hand1Pos = new THREE.Vector3();
+        let hand2Pos = new THREE.Vector3();
+        let prevHandDistance = 0;
 
         function initThreeJS() {
             scene = new THREE.Scene();
@@ -319,22 +328,133 @@
             
             const particles = new THREE.Points(particlesGeometry, particlesMaterial);
             scene.add(particles);
+            
+            // Create tech sphere
+            createTechSphere();
+        }
+        
+        function createTechSphere() {
+            // Create main sphere group
+            techSphere = new THREE.Group();
+            techSphere.position.set(0, -2, 0);
+            scene.add(techSphere);
+            
+            // Core sphere
+            const coreGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const coreMaterial = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                emissive: 0x00ffff,
+                emissiveIntensity: 1,
+                transparent: true,
+                opacity: 0.8
+            });
+            const core = new THREE.Mesh(coreGeometry, coreMaterial);
+            techSphere.add(core);
+            
+            // Create 8 sphere parts that can split
+            const partGeometry = new THREE.SphereGeometry(0.8, 16, 16, 0, Math.PI, 0, Math.PI / 2);
+            const colors = [0xff0088, 0x00ff88, 0x0088ff, 0xffaa00, 0xff00ff, 0x00ffff, 0xaaff00, 0xff8800];
+            
+            for (let i = 0; i < 8; i++) {
+                const partMaterial = new THREE.MeshPhongMaterial({
+                    color: colors[i],
+                    emissive: colors[i],
+                    emissiveIntensity: 0.3,
+                    transparent: true,
+                    opacity: 0.7,
+                    wireframe: false
+                });
+                
+                const part = new THREE.Mesh(partGeometry, partMaterial);
+                
+                // Add wireframe
+                const wireframeGeo = new THREE.EdgesGeometry(partGeometry);
+                const wireframeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+                const wireframe = new THREE.LineSegments(wireframeGeo, wireframeMat);
+                part.add(wireframe);
+                
+                // Position parts in octant formation
+                const angle = (i * Math.PI) / 4;
+                part.userData.originalRotation = {
+                    x: Math.floor(i / 4) * Math.PI,
+                    y: angle,
+                    z: 0
+                };
+                part.rotation.set(part.userData.originalRotation.x, part.userData.originalRotation.y, part.userData.originalRotation.z);
+                
+                part.userData.index = i;
+                techSphere.add(part);
+                sphereParts.push(part);
+            }
+            
+            // Add holographic rings
+            for (let i = 0; i < 3; i++) {
+                const ringGeometry = new THREE.TorusGeometry(2 + i * 0.5, 0.02, 16, 100);
+                const ringMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x00ffff,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.rotation.x = Math.random() * Math.PI;
+                ring.rotation.y = Math.random() * Math.PI;
+                techSphere.add(ring);
+                ring.userData.isRing = true;
+            }
+        }
+        
+        function updateTechSphere() {
+            if (!techSphere) return;
+            
+            // Rotate core and rings
+            techSphere.children.forEach((child, index) => {
+                if (child.userData.isRing) {
+                    child.rotation.z += 0.005;
+                } else if (index === 0) {
+                    // Core rotation
+                    child.rotation.y += 0.01;
+                }
+            });
+            
+            // Animate sphere parts based on expansion state
+            const targetDistance = isSphereExpanded ? 3 : 0;
+            
+            sphereParts.forEach((part, i) => {
+                const angle = (i * Math.PI) / 4;
+                const elevation = Math.floor(i / 4) * Math.PI - Math.PI / 2;
+                
+                const currentDist = Math.sqrt(
+                    part.position.x * part.position.x + 
+                    part.position.y * part.position.y + 
+                    part.position.z * part.position.z
+                );
+                
+                const newDist = currentDist + (targetDistance - currentDist) * 0.1;
+                
+                part.position.x = Math.cos(angle) * Math.cos(elevation) * newDist;
+                part.position.y = Math.sin(elevation) * newDist;
+                part.position.z = Math.sin(angle) * Math.cos(elevation) * newDist;
+                
+                // Rotate parts
+                part.rotation.y += 0.02;
+                part.rotation.x += 0.01;
+            });
         }
 
-        function createVirtualHand() {
+        function createVirtualHand(handIndex) {
             // Create group for hand
-            virtualHand = new THREE.Group();
-            scene.add(virtualHand);
+            virtualHands[handIndex] = new THREE.Group();
+            scene.add(virtualHands[handIndex]);
 
             // Create 21 spheres for hand landmarks
             for (let i = 0; i < 21; i++) {
                 const geometry = new THREE.SphereGeometry(0.1, 16, 16);
-                let color = 0x00ff88;
+                let color = handIndex === 0 ? 0x00ff88 : 0xff0088;
                 
                 // Different colors for different parts
-                if (i === 4) color = 0xff0088; // Thumb tip
-                if (i === 8) color = 0x00ffff; // Index tip
-                if (i === 0) color = 0xffaa00; // Wrist
+                if (i === 4) color = handIndex === 0 ? 0xff0088 : 0xffaa00; // Thumb tip
+                if (i === 8) color = handIndex === 0 ? 0x00ffff : 0xff00ff; // Index tip
+                if (i === 0) color = handIndex === 0 ? 0xffaa00 : 0x00aaff; // Wrist
                 
                 const material = new THREE.MeshBasicMaterial({ 
                     color: color,
@@ -342,8 +462,8 @@
                     opacity: 0.8
                 });
                 const sphere = new THREE.Mesh(geometry, material);
-                virtualHand.add(sphere);
-                handSpheres.push(sphere);
+                virtualHands[handIndex].add(sphere);
+                handSpheres[handIndex].push(sphere);
             }
 
             // Create lines connecting hand landmarks
@@ -365,35 +485,35 @@
             handConnections.forEach(() => {
                 const geometry = new THREE.BufferGeometry();
                 const material = new THREE.LineBasicMaterial({ 
-                    color: 0x00ff88,
+                    color: handIndex === 0 ? 0x00ff88 : 0xff0088,
                     transparent: true,
                     opacity: 0.6,
                     linewidth: 2
                 });
                 const line = new THREE.Line(geometry, material);
-                virtualHand.add(line);
-                handLines.push(line);
+                virtualHands[handIndex].add(line);
+                handLines[handIndex].push(line);
             });
         }
 
-        function updateVirtualHand(landmarks) {
-            if (!virtualHand) {
-                createVirtualHand();
+        function updateVirtualHand(landmarks, handIndex) {
+            if (!virtualHands[handIndex]) {
+                createVirtualHand(handIndex);
             }
 
             // Update sphere positions
             landmarks.forEach((landmark, i) => {
-                if (handSpheres[i]) {
+                if (handSpheres[handIndex][i]) {
                     // Convert normalized coordinates to 3D space
-                    handSpheres[i].position.x = (landmark.x - 0.5) * 20;
-                    handSpheres[i].position.y = -(landmark.y - 0.5) * 15;
-                    handSpheres[i].position.z = -landmark.z * 10 + 5;
+                    handSpheres[handIndex][i].position.x = (landmark.x - 0.5) * 20;
+                    handSpheres[handIndex][i].position.y = -(landmark.y - 0.5) * 15;
+                    handSpheres[handIndex][i].position.z = -landmark.z * 10 + 5;
                     
                     // Make thumb and index tips glow when pinching
                     if ((i === 4 || i === 8) && isPinching) {
-                        handSpheres[i].scale.set(1.5, 1.5, 1.5);
+                        handSpheres[handIndex][i].scale.set(1.5, 1.5, 1.5);
                     } else {
-                        handSpheres[i].scale.set(1, 1, 1);
+                        handSpheres[handIndex][i].scale.set(1, 1, 1);
                     }
                 }
             });
@@ -409,30 +529,30 @@
             ];
 
             handConnections.forEach((connection, i) => {
-                if (handLines[i]) {
+                if (handLines[handIndex][i]) {
                     const [start, end] = connection;
                     const positions = new Float32Array([
-                        handSpheres[start].position.x,
-                        handSpheres[start].position.y,
-                        handSpheres[start].position.z,
-                        handSpheres[end].position.x,
-                        handSpheres[end].position.y,
-                        handSpheres[end].position.z
+                        handSpheres[handIndex][start].position.x,
+                        handSpheres[handIndex][start].position.y,
+                        handSpheres[handIndex][start].position.z,
+                        handSpheres[handIndex][end].position.x,
+                        handSpheres[handIndex][end].position.y,
+                        handSpheres[handIndex][end].position.z
                     ]);
-                    handLines[i].geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    handLines[handIndex][i].geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
                     
                     // Highlight when pinching
                     if (isPinching && (connection[0] === 4 || connection[1] === 4 || connection[0] === 8 || connection[1] === 8)) {
-                        handLines[i].material.color.setHex(0xffff00);
-                        handLines[i].material.opacity = 1;
+                        handLines[handIndex][i].material.color.setHex(0xffff00);
+                        handLines[handIndex][i].material.opacity = 1;
                     } else {
-                        handLines[i].material.color.setHex(0x00ff88);
-                        handLines[i].material.opacity = 0.6;
+                        handLines[handIndex][i].material.color.setHex(handIndex === 0 ? 0x00ff88 : 0xff0088);
+                        handLines[handIndex][i].material.opacity = 0.6;
                     }
                 }
             });
 
-            virtualHand.visible = true;
+            virtualHands[handIndex].visible = true;
         }
 
         function animate() {
@@ -451,6 +571,9 @@
             if (selectedObject) {
                 selectedObject.scale.set(1.2, 1.2, 1.2);
             }
+            
+            // Update tech sphere
+            updateTechSphere();
 
             renderer.render(scene, camera);
         }
@@ -477,106 +600,169 @@
         }
 
         function onResults(results) {
+            // Hide all hands first
+            virtualHands.forEach((hand, index) => {
+                if (hand) hand.visible = false;
+            });
+            
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const landmarks = results.multiHandLandmarks[0];
+                const numHands = results.multiHandLandmarks.length;
                 
-                // Update virtual hand visualization
-                updateVirtualHand(landmarks);
+                // Update each detected hand
+                for (let handIndex = 0; handIndex < numHands && handIndex < 2; handIndex++) {
+                    const landmarks = results.multiHandLandmarks[handIndex];
+                    updateVirtualHand(landmarks, handIndex);
+                    
+                    // Store hand positions (using index finger tip)
+                    const indexTip = landmarks[8];
+                    const pos = new THREE.Vector3(
+                        (indexTip.x - 0.5) * 20,
+                        -(indexTip.y - 0.5) * 15,
+                        -indexTip.z * 10 + 5
+                    );
+                    
+                    if (handIndex === 0) {
+                        hand1Pos.copy(pos);
+                    } else {
+                        hand2Pos.copy(pos);
+                    }
+                }
                 
-                // Get key points
-                const thumb = landmarks[4];
-                const index = landmarks[8];
-                const middle = landmarks[12];
-                const ring = landmarks[16];
-                const pinky = landmarks[20];
-                const wrist = landmarks[0];
-                const indexBase = landmarks[5];
-
-                // Update hand position
-                handX = index.x * 2 - 1;
-                handY = -(index.y * 2 - 1);
-                handZ = index.z;
-
-                // Detect pinch (thumb + index close)
-                const pinchDistance = distance(thumb, index);
-                const wasPinching = isPinching;
-                isPinching = pinchDistance < 0.05;
-
-                if (isPinching && !wasPinching) {
-                    // Pinch started - select object
-                    selectObjectAtPosition();
-                    updateGestureStatus('✊ Đang chọn vật thể');
-                } else if (!isPinching && wasPinching) {
-                    // Pinch released
-                    if (selectedObject) {
-                        selectedObject.scale.set(1, 1, 1);
-                        selectedObject = null;
+                // Two hands gesture control
+                if (numHands === 2) {
+                    const handDistance = hand1Pos.distanceTo(hand2Pos);
+                    
+                    // Detect pinch/spread gesture
+                    if (prevHandDistance > 0) {
+                        const distanceChange = handDistance - prevHandDistance;
+                        
+                        // Spreading hands apart - expand sphere
+                        if (distanceChange > 0.3 && !isSphereExpanded) {
+                            isSphereExpanded = true;
+                            updateGestureStatus('✨ Mở rộng quả cầu!');
+                        }
+                        // Bringing hands together - collapse sphere
+                        else if (distanceChange < -0.3 && isSphereExpanded) {
+                            isSphereExpanded = false;
+                            updateGestureStatus('💫 Thu nhỏ quả cầu!');
+                        }
+                        // Show current distance
+                        else if (Math.abs(distanceChange) > 0.05) {
+                            if (distanceChange > 0) {
+                                updateGestureStatus(`👐 Đang mở rộng... ${handDistance.toFixed(1)}`);
+                            } else {
+                                updateGestureStatus(`🤲 Đang thu nhỏ... ${handDistance.toFixed(1)}`);
+                            }
+                        }
                     }
-                    updateGestureStatus('Sẵn sàng');
-                }
-
-                // Detect open hand (all fingers extended)
-                const fingersExtended = [
-                    landmarks[8].y < landmarks[6].y, // Index
-                    landmarks[12].y < landmarks[10].y, // Middle
-                    landmarks[16].y < landmarks[14].y, // Ring
-                    landmarks[20].y < landmarks[18].y  // Pinky
-                ];
-                isHandOpen = fingersExtended.every(f => f);
-
-                if (isHandOpen && !isPinching) {
-                    // Rotate camera
-                    const deltaX = handX - prevHandX;
-                    const deltaY = handY - prevHandY;
                     
-                    camera.position.x += deltaX * 5;
-                    camera.position.y += deltaY * 5;
-                    camera.lookAt(0, 0, 0);
+                    prevHandDistance = handDistance;
                     
-                    updateGestureStatus('🔄 Xoay camera');
-                }
-
-                // Swipe up/down (move camera closer/farther)
-                const swipeSpeed = handY - prevHandY;
-                if (Math.abs(swipeSpeed) > 0.02 && !isPinching) {
-                    camera.position.z -= swipeSpeed * 20;
-                    camera.position.z = Math.max(5, Math.min(30, camera.position.z));
-                    
-                    if (swipeSpeed > 0) {
-                        updateGestureStatus('👆 Di chuyển gần');
-                    } else {
-                        updateGestureStatus('👇 Di chuyển xa');
+                    // Move tech sphere to center point between hands
+                    if (techSphere) {
+                        const centerX = (hand1Pos.x + hand2Pos.x) / 2;
+                        const centerY = (hand1Pos.y + hand2Pos.y) / 2;
+                        const centerZ = (hand1Pos.z + hand2Pos.z) / 2;
+                        
+                        techSphere.position.x += (centerX - techSphere.position.x) * 0.1;
+                        techSphere.position.y += (centerY - techSphere.position.y) * 0.1;
+                        techSphere.position.z += (centerZ - techSphere.position.z) * 0.1;
                     }
                 }
-
-                // Swipe left/right (move camera horizontally)
-                const swipeHorizontal = handX - prevHandX;
-                if (Math.abs(swipeHorizontal) > 0.02 && !isPinching && !isHandOpen) {
-                    camera.position.x += swipeHorizontal * 10;
+                // Single hand control (original functionality)
+                else if (numHands === 1) {
+                    const landmarks = results.multiHandLandmarks[0];
                     
-                    if (swipeHorizontal > 0) {
-                        updateGestureStatus('👉 Di chuyển phải');
-                    } else {
-                        updateGestureStatus('👈 Di chuyển trái');
+                    // Get key points
+                    const thumb = landmarks[4];
+                    const index = landmarks[8];
+                    const middle = landmarks[12];
+                    const ring = landmarks[16];
+                    const pinky = landmarks[20];
+                    const wrist = landmarks[0];
+                    const indexBase = landmarks[5];
+
+                    // Update hand position
+                    handX = index.x * 2 - 1;
+                    handY = -(index.y * 2 - 1);
+                    handZ = index.z;
+
+                    // Detect pinch (thumb + index close)
+                    const pinchDistance = distance(thumb, index);
+                    const wasPinching = isPinching;
+                    isPinching = pinchDistance < 0.05;
+
+                    if (isPinching && !wasPinching) {
+                        selectObjectAtPosition();
+                        updateGestureStatus('✊ Đang chọn vật thể');
+                    } else if (!isPinching && wasPinching) {
+                        if (selectedObject) {
+                            selectedObject.scale.set(1, 1, 1);
+                            selectedObject = null;
+                        }
+                        updateGestureStatus('👋 1 tay - Điều khiển thường');
                     }
-                }
 
-                // Update selected object position
-                if (isPinching && selectedObject) {
-                    selectedObject.position.x = handX * 10;
-                    selectedObject.position.y = handY * 5;
-                    selectedObject.rotation.y += 0.05;
-                    updateGestureStatus('🎯 Đang di chuyển vật thể');
-                }
+                    // Detect open hand
+                    const fingersExtended = [
+                        landmarks[8].y < landmarks[6].y,
+                        landmarks[12].y < landmarks[10].y,
+                        landmarks[16].y < landmarks[14].y,
+                        landmarks[20].y < landmarks[18].y
+                    ];
+                    isHandOpen = fingersExtended.every(f => f);
 
-                prevHandX = handX;
-                prevHandY = handY;
+                    if (isHandOpen && !isPinching) {
+                        const deltaX = handX - prevHandX;
+                        const deltaY = handY - prevHandY;
+                        
+                        camera.position.x += deltaX * 5;
+                        camera.position.y += deltaY * 5;
+                        camera.lookAt(0, 0, 0);
+                        
+                        updateGestureStatus('🔄 Xoay camera');
+                    }
+
+                    // Swipe gestures
+                    const swipeSpeed = handY - prevHandY;
+                    if (Math.abs(swipeSpeed) > 0.02 && !isPinching) {
+                        camera.position.z -= swipeSpeed * 20;
+                        camera.position.z = Math.max(5, Math.min(30, camera.position.z));
+                        
+                        if (swipeSpeed > 0) {
+                            updateGestureStatus('👆 Di chuyển gần');
+                        } else {
+                            updateGestureStatus('👇 Di chuyển xa');
+                        }
+                    }
+
+                    const swipeHorizontal = handX - prevHandX;
+                    if (Math.abs(swipeHorizontal) > 0.02 && !isPinching && !isHandOpen) {
+                        camera.position.x += swipeHorizontal * 10;
+                        
+                        if (swipeHorizontal > 0) {
+                            updateGestureStatus('👉 Di chuyển phải');
+                        } else {
+                            updateGestureStatus('👈 Di chuyển trái');
+                        }
+                    }
+
+                    if (isPinching && selectedObject) {
+                        selectedObject.position.x = handX * 10;
+                        selectedObject.position.y = handY * 5;
+                        selectedObject.rotation.y += 0.05;
+                        updateGestureStatus('🎯 Đang di chuyển vật thể');
+                    }
+
+                    prevHandX = handX;
+                    prevHandY = handY;
+                    
+                    // Reset distance tracking for 2-hand mode
+                    prevHandDistance = 0;
+                }
             } else {
-                // Hide virtual hand when no hand detected
-                if (virtualHand) {
-                    virtualHand.visible = false;
-                }
                 updateGestureStatus('❌ Không phát hiện bàn tay');
+                prevHandDistance = 0;
             }
         }
 
@@ -602,7 +788,7 @@
         });
 
         hands.setOptions({
-            maxNumHands: 1,
+            maxNumHands: 2,  // Support 2 hands
             modelComplexity: 1,
             minDetectionConfidence: 0.7,
             minTrackingConfidence: 0.7
