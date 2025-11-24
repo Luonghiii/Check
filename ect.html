@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eye Tracking Control</title>
+    <title>Eye Tracking - Điều khiển bằng mắt</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/facemesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
     <style>
         * {
             margin: 0;
@@ -20,12 +20,135 @@
             height: 100vh;
         }
 
-        #container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
+        /* Loading Screen */
+        #loadingScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            color: white;
         }
 
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #loadingText {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        /* Calibration Screen */
+        #calibrationScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            z-index: 9999;
+        }
+
+        #calibrationScreen.active {
+            display: block;
+        }
+
+        .calibration-info {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 10000;
+        }
+
+        .calibration-info h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .calibration-info p {
+            font-size: 18px;
+            margin: 10px 0;
+            opacity: 0.9;
+        }
+
+        .calibration-info button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 18px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .calibration-info button:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .calibration-point {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, #ff6b6b 0%, #ff4757 100%);
+            border: 4px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            animation: pulse 1s infinite;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+            display: none;
+        }
+
+        .calibration-point.active {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.3); }
+        }
+
+        .calibration-progress {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        /* Main App */
+        #mainApp {
+            display: none;
+            position: fixed;
+            inset: 0;
+        }
+
+        #mainApp.active {
+            display: block;
+        }
+
+        /* Video Preview */
         #videoContainer {
             position: fixed;
             top: 20px;
@@ -46,73 +169,99 @@
             transform: scaleX(-1);
         }
 
-        #cursor {
+        /* Eye Cursor */
+        #eyeCursor {
             position: fixed;
-            width: 30px;
-            height: 30px;
-            border: 3px solid #fff;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #00ff88;
             border-radius: 50%;
             pointer-events: none;
-            z-index: 1000;
-            transition: all 0.1s ease;
-            box-shadow: 0 0 20px rgba(255,255,255,0.5);
-            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            z-index: 9998;
+            transition: all 0.05s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.6),
+                        0 0 40px rgba(0, 255, 136, 0.3);
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.2) 0%, transparent 70%);
             display: none;
         }
 
-        #cursor.clicking {
-            animation: clickPulse 0.3s ease;
-            background: radial-gradient(circle, rgba(255,100,100,0.5) 0%, transparent 70%);
+        #eyeCursor.active {
+            display: block;
         }
 
-        @keyframes clickPulse {
+        #eyeCursor.blinking {
+            animation: blinkEffect 0.3s ease;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
+        }
+
+        @keyframes blinkEffect {
             0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.5); }
+            50% { transform: translate(-50%, -50%) scale(1.8); }
         }
 
-        #status {
+        /* Status Panel */
+        #statusPanel {
             position: fixed;
             top: 20px;
             left: 20px;
-            background: rgba(255,255,255,0.95);
-            padding: 20px 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+            z-index: 100;
+            min-width: 250px;
         }
 
-        #status h2 {
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 20px;
+        #statusPanel h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 18px;
         }
 
-        #status p {
-            color: #555;
-            margin: 5px 0;
+        .status-item {
+            margin: 10px 0;
             font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
+        .status-indicator {
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            margin-right: 8px;
+            background: #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
         }
 
-        .indicator.active {
-            background: #4ade80;
-            box-shadow: 0 0 10px #4ade80;
+        .status-indicator.active {
+            background: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
         }
 
-        .indicator.inactive {
-            background: #f87171;
+        .recalibrate-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            transition: all 0.3s;
         }
 
-        #playground {
-            position: absolute;
+        .recalibrate-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        /* Interactive Targets */
+        #targetContainer {
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -125,22 +274,30 @@
         .target-box {
             width: 150px;
             height: 150px;
-            background: rgba(255,255,255,0.2);
-            border: 3px solid rgba(255,255,255,0.4);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 20px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-size: 48px;
             cursor: pointer;
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
+            position: relative;
         }
 
         .target-box:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+            border-color: #00ff88;
+        }
+
+        .target-box.gazed {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
             transform: scale(1.1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
         .target-box.clicked {
@@ -149,389 +306,678 @@
 
         @keyframes targetClick {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(0.9); background: rgba(100,255,100,0.5); }
+            50% { 
+                transform: scale(0.9); 
+                background: rgba(255, 107, 107, 0.4);
+            }
         }
 
+        .target-label {
+            font-size: 12px;
+            color: white;
+            margin-top: 10px;
+            opacity: 0.7;
+        }
+
+        /* Instructions */
         #instructions {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
             color: white;
             padding: 15px 30px;
             border-radius: 10px;
             text-align: center;
             z-index: 100;
+            font-size: 14px;
         }
 
-        .loading {
+        #instructions strong {
+            color: #00ff88;
+        }
+
+        /* EAR Debug */
+        #earDebug {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
             color: white;
-            font-size: 24px;
-            text-align: center;
-            z-index: 1000;
-        }
-
-        .spinner {
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: monospace;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="loading" class="loading">
-            <div class="spinner"></div>
-            <p>Đang tải mô hình AI...</p>
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <div class="spinner"></div>
+        <div id="loadingText">Đang khởi tạo camera và AI model...</div>
+    </div>
+
+    <!-- Calibration Screen -->
+    <div id="calibrationScreen">
+        <div class="calibration-info" id="calibrationInfo">
+            <h2>👁️ Hiệu chuẩn Eye Tracking</h2>
+            <p>Để theo dõi chính xác, chúng ta cần hiệu chuẩn hệ thống.</p>
+            <p>Bạn sẽ nhìn vào 9 điểm trên màn hình và nhấp chuột.</p>
+            <p><strong>Lưu ý:</strong> Giữ đầu ở vị trí thoải mái và không di chuyển.</p>
+            <button id="startCalibration">Bắt đầu hiệu chuẩn</button>
         </div>
 
-        <div id="videoContainer" style="display: none;">
-            <video id="webcam" autoplay playsinline></video>
+        <div class="calibration-progress" id="calibrationProgress" style="display: none;">
+            Điểm: <span id="currentPoint">0</span> / 9
         </div>
 
-        <div id="cursor"></div>
+        <!-- 9 calibration points -->
+        <div class="calibration-point" id="point-0" style="left: 10%; top: 10%;"></div>
+        <div class="calibration-point" id="point-1" style="left: 50%; top: 10%;"></div>
+        <div class="calibration-point" id="point-2" style="left: 90%; top: 10%;"></div>
+        <div class="calibration-point" id="point-3" style="left: 10%; top: 50%;"></div>
+        <div class="calibration-point" id="point-4" style="left: 50%; top: 50%;"></div>
+        <div class="calibration-point" id="point-5" style="left: 90%; top: 50%;"></div>
+        <div class="calibration-point" id="point-6" style="left: 10%; top: 90%;"></div>
+        <div class="calibration-point" id="point-7" style="left: 50%; top: 90%;"></div>
+        <div class="calibration-point" id="point-8" style="left: 90%; top: 90%;"></div>
+    </div>
 
-        <div id="status" style="display: none;">
-            <h2>👁️ Eye Tracking Active</h2>
-            <p><span class="indicator inactive" id="trackingIndicator"></span>Tracking: <span id="trackingStatus">Chờ...</span></p>
-            <p>🖱️ Nhìn để di chuyển con trỏ</p>
-            <p>😉 Nháy mắt để click</p>
-            <p>Clicks: <strong id="clickCount">0</strong></p>
+    <!-- Main App -->
+    <div id="mainApp">
+        <!-- Video Preview -->
+        <div id="videoContainer">
+            <video id="webcam" autoplay playsinline muted></video>
         </div>
 
-        <div id="playground" style="display: none;">
-            <div class="target-box" data-emoji="🎯">🎯</div>
-            <div class="target-box" data-emoji="⭐">⭐</div>
-            <div class="target-box" data-emoji="💎">💎</div>
-            <div class="target-box" data-emoji="🎨">🎨</div>
-            <div class="target-box" data-emoji="🚀">🚀</div>
-            <div class="target-box" data-emoji="🎵">🎵</div>
-            <div class="target-box" data-emoji="🌈">🌈</div>
-            <div class="target-box" data-emoji="🔥">🔥</div>
-            <div class="target-box" data-emoji="✨">✨</div>
+        <!-- Eye Cursor -->
+        <div id="eyeCursor"></div>
+
+        <!-- Status Panel -->
+        <div id="statusPanel">
+            <h3>📊 Eye Tracking Status</h3>
+            <div class="status-item">
+                <span class="status-indicator" id="trackingIndicator"></span>
+                <span>Tracking: <span id="trackingStatus">Chờ...</span></span>
+            </div>
+            <div class="status-item">
+                <span class="status-indicator" id="blinkIndicator"></span>
+                <span>Blinks: <span id="blinkCount">0</span></span>
+            </div>
+            <div class="status-item">
+                <span class="status-indicator" id="fpsIndicator"></span>
+                <span>FPS: <span id="fpsDisplay">0</span></span>
+            </div>
+            <button class="recalibrate-btn" id="recalibrateBtn">🎯 Hiệu chuẩn lại</button>
         </div>
 
-        <div id="instructions" style="display: none;">
-            <strong>Hướng dẫn:</strong> Di chuyển mắt để điều khiển con trỏ | Nháy mắt để click vào các ô
+        <!-- Target Boxes -->
+        <div id="targetContainer">
+            <div class="target-box" data-id="1">
+                🎯
+                <div class="target-label">Target 1</div>
+            </div>
+            <div class="target-box" data-id="2">
+                ⭐
+                <div class="target-label">Target 2</div>
+            </div>
+            <div class="target-box" data-id="3">
+                💎
+                <div class="target-label">Target 3</div>
+            </div>
+            <div class="target-box" data-id="4">
+                🎨
+                <div class="target-label">Target 4</div>
+            </div>
+            <div class="target-box" data-id="5">
+                🚀
+                <div class="target-label">Target 5</div>
+            </div>
+            <div class="target-box" data-id="6">
+                🎵
+                <div class="target-label">Target 6</div>
+            </div>
+            <div class="target-box" data-id="7">
+                🌈
+                <div class="target-label">Target 7</div>
+            </div>
+            <div class="target-box" data-id="8">
+                🔥
+                <div class="target-label">Target 8</div>
+            </div>
+            <div class="target-box" data-id="9">
+                ✨
+                <div class="target-label">Target 9</div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div id="instructions">
+            <strong>👁️ Nhìn</strong> để di chuyển con trỏ | 
+            <strong>😉 Nháy mắt</strong> để click vào các ô
+        </div>
+
+        <!-- EAR Debug -->
+        <div id="earDebug">
+            EAR: <span id="earValue">--</span><br>
+            Threshold: <span id="earThreshold">--</span>
         </div>
     </div>
 
     <script>
-        let model;
-        let cursor = document.getElementById('cursor');
-        let clickCount = 0;
-        let blinkDetected = false;
+        // Global variables
+        let detector = null;
+        let video = null;
+        let animationFrameId = null;
+        let isCalibrating = false;
+        let calibrationData = [];
+        let gazeModel = null;
+        
+        // Blink detection
+        let blinkCounter = 0;
         let lastBlinkTime = 0;
-        const BLINK_THRESHOLD = 3.5; // Ngưỡng tỷ lệ EAR
+        let consecutiveFramesBelowThreshold = 0;
         const BLINK_COOLDOWN = 500; // ms
-        let isModelLoaded = false;
-        let isVideoReady = false;
-        let lastEAR = 10; // Eye Aspect Ratio ban đầu
+        const CONSEC_FRAMES_FOR_BLINK = 3;
+        let earThreshold = 0.21; // Dynamic threshold
+        let earHistory = [];
+        const EAR_HISTORY_SIZE = 30;
+        
+        // Performance tracking
+        let fps = 0;
+        let lastFrameTime = Date.now();
+        let frameCount = 0;
+        
+        // Gaze tracking
+        let currentGazeX = 0;
+        let currentGazeY = 0;
 
-        // Khởi tạo webcam
-        async function setupWebcam() {
-            console.log('Setting up webcam...');
-            const video = document.getElementById('webcam');
-            
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        width: 640, 
-                        height: 480,
-                        facingMode: 'user'
-                    }
-                });
-                video.srcObject = stream;
-                
-                return new Promise((resolve) => {
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        console.log('Webcam ready');
-                        isVideoReady = true;
-                        resolve(video);
-                    };
-                });
-            } catch (err) {
-                console.error('Webcam error:', err);
-                throw new Error('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập!');
-            }
-        }
-
-        // Khởi tạo FaceMesh model
-        async function loadModel() {
-            console.log('Loading FaceMesh model...');
-            document.getElementById('loading').innerHTML = `
-                <div class="spinner"></div>
-                <p>Đang tải mô hình AI...</p>
-                <p style="font-size: 14px; opacity: 0.7;">Có thể mất 10-30 giây</p>
-            `;
-            
-            try {
-                model = await facemesh.load({
-                    maxFaces: 1,
-                    detectionConfidence: 0.9,
-                    iouThreshold: 0.3,
-                    scoreThreshold: 0.75
-                });
-                console.log('FaceMesh model loaded successfully!');
-                isModelLoaded = true;
-            } catch (err) {
-                console.error('Model loading error:', err);
-                throw new Error('Không thể tải mô hình AI. Vui lòng thử lại!');
-            }
-        }
-
-        // Tính khoảng cách giữa 2 điểm
-        function distance(point1, point2) {
-            return Math.sqrt(
-                Math.pow(point1[0] - point2[0], 2) +
-                Math.pow(point1[1] - point2[1], 2) +
-                Math.pow(point1[2] - point2[2], 2)
-            );
-        }
-
-        // Tính Eye Aspect Ratio (EAR) để phát hiện nháy mắt
-        function calculateEAR(eye) {
-            // eye = [p1, p2, p3, p4, p5, p6]
-            // p2-p6 và p3-p5 là chiều dọc
-            // p1-p4 là chiều ngang
-            const vertical1 = distance(eye[1], eye[5]);
-            const vertical2 = distance(eye[2], eye[4]);
-            const horizontal = distance(eye[0], eye[3]);
-            
-            const ear = (vertical1 + vertical2) / (2.0 * horizontal);
-            return ear;
-        }
-
-        // Phát hiện nháy mắt dựa trên EAR
-        function detectBlink(landmarks) {
-            // Left eye indices: 33, 160, 158, 133, 153, 144
-            // Right eye indices: 362, 385, 387, 263, 373, 380
-            
-            const leftEye = [
-                landmarks[33],  // outer corner
-                landmarks[160], // top 1
-                landmarks[158], // top 2
-                landmarks[133], // inner corner
-                landmarks[153], // bottom 1
-                landmarks[144]  // bottom 2
-            ];
-            
-            const rightEye = [
-                landmarks[362], // outer corner
-                landmarks[385], // top 1
-                landmarks[387], // top 2
-                landmarks[263], // inner corner
-                landmarks[373], // bottom 1
-                landmarks[380]  // bottom 2
-            ];
-            
-            // Kiểm tra tất cả điểm có tồn tại
-            const allPointsExist = [...leftEye, ...rightEye].every(p => p && p.length >= 3);
-            if (!allPointsExist) {
-                return false;
-            }
-            
-            const leftEAR = calculateEAR(leftEye);
-            const rightEAR = calculateEAR(rightEye);
-            const avgEAR = (leftEAR + rightEAR) / 2;
-            
-            // Debug
-            console.log('EAR:', avgEAR.toFixed(3));
-            
-            // Nháy mắt khi EAR giảm đột ngột
-            const earDrop = lastEAR - avgEAR;
-            lastEAR = avgEAR;
-            
-            // Nếu EAR giảm hơn 0.05 so với trước đó = nháy mắt
-            return earDrop > 0.05 && avgEAR < 0.2;
-        }
-
-        // Trigger click event
-        function triggerClick(x, y) {
-            const now = Date.now();
-            if (now - lastBlinkTime < BLINK_COOLDOWN) return;
-            
-            lastBlinkTime = now;
-            clickCount++;
-            document.getElementById('clickCount').textContent = clickCount;
-            
-            // Visual feedback
-            cursor.classList.add('clicking');
-            setTimeout(() => cursor.classList.remove('clicking'), 300);
-            
-            // Kiểm tra xem có click vào target box nào không
-            const boxes = document.querySelectorAll('.target-box');
-            boxes.forEach(box => {
-                const rect = box.getBoundingClientRect();
-                if (x >= rect.left && x <= rect.right && 
-                    y >= rect.top && y <= rect.bottom) {
-                    box.classList.add('clicked');
-                    setTimeout(() => box.classList.remove('clicked'), 500);
-                    
-                    // Random emoji mới
-                    const emojis = ['🎯', '⭐', '💎', '🎨', '🚀', '🎵', '🌈', '🔥', '✨', '🎪', '🎭', '🎬', '🎮', '🏆', '💫'];
-                    box.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-                }
-            });
-        }
-
-        // Detect faces và cập nhật vị trí cursor
-        async function detectFaces() {
-            if (!isModelLoaded || !isVideoReady) {
-                console.log('Waiting for model and video...');
-                setTimeout(detectFaces, 100);
-                return;
-            }
-
-            const video = document.getElementById('webcam');
-            
-            try {
-                const predictions = await model.estimateFaces(video);
-                
-                if (predictions.length > 0) {
-                    const keypoints = predictions[0].scaledMesh;
-                    
-                    // Sử dụng các điểm quanh mắt để tính hướng nhìn
-                    // Left eye center: 468 (nếu có iris tracking) hoặc dùng 33
-                    // Right eye center: 473 hoặc 263
-                    
-                    // Lấy 4 góc của mỗi mắt để tính điểm giữa chính xác
-                    const leftEyeInner = keypoints[133]; // Left inner corner
-                    const leftEyeOuter = keypoints[33];  // Left outer corner
-                    const rightEyeInner = keypoints[362]; // Right inner corner  
-                    const rightEyeOuter = keypoints[263]; // Right outer corner
-                    
-                    if (!leftEyeInner || !leftEyeOuter || !rightEyeInner || !rightEyeOuter) {
-                        requestAnimationFrame(detectFaces);
-                        return;
-                    }
-                    
-                    // Tính điểm giữa mỗi mắt
-                    const leftEyeCenterX = (leftEyeInner[0] + leftEyeOuter[0]) / 2;
-                    const leftEyeCenterY = (leftEyeInner[1] + leftEyeOuter[1]) / 2;
-                    const rightEyeCenterX = (rightEyeInner[0] + rightEyeOuter[0]) / 2;
-                    const rightEyeCenterY = (rightEyeInner[1] + rightEyeOuter[1]) / 2;
-                    
-                    // Tính điểm giữa 2 mắt
-                    const gazeCenterX = (leftEyeCenterX + rightEyeCenterX) / 2;
-                    const gazeCenterY = (leftEyeCenterY + rightEyeCenterY) / 2;
-                    
-                    // Lấy điểm mũi để làm reference
-                    const noseTip = keypoints[1]; // Nose tip
-                    
-                    // Tính offset từ mũi đến điểm giữa mắt (hướng nhìn)
-                    const gazeOffsetX = gazeCenterX - noseTip[0];
-                    const gazeOffsetY = gazeCenterY - noseTip[1];
-                    
-                    // Map vị trí từ video sang màn hình
-                    // Video bị mirror nên đảo ngược X
-                    const baseX = window.innerWidth - (gazeCenterX / 640) * window.innerWidth;
-                    const baseY = (gazeCenterY / 480) * window.innerHeight;
-                    
-                    // Thêm offset dựa trên hướng nhìn (amplify để nhạy hơn)
-                    const amplifyFactor = 2.0;
-                    const screenX = baseX - (gazeOffsetX * amplifyFactor);
-                    const screenY = baseY + (gazeOffsetY * amplifyFactor);
-                    
-                    // Giới hạn trong màn hình
-                    const clampedX = Math.max(0, Math.min(window.innerWidth, screenX));
-                    const clampedY = Math.max(0, Math.min(window.innerHeight, screenY));
-                    
-                    // Cập nhật vị trí cursor với smooth transition
-                    cursor.style.left = clampedX + 'px';
-                    cursor.style.top = clampedY + 'px';
-                    cursor.style.transform = 'translate(-50%, -50%)';
-                    cursor.style.display = 'block';
-                    
-                    // Phát hiện nháy mắt
-                    const isBlink = detectBlink(keypoints);
-                    
-                    if (isBlink && !blinkDetected) {
-                        const now = Date.now();
-                        if (now - lastBlinkTime > BLINK_COOLDOWN) {
-                            blinkDetected = true;
-                            triggerClick(clampedX, clampedY);
-                        }
-                    } else if (!isBlink) {
-                        blinkDetected = false;
-                    }
-                    
-                    // Cập nhật status
-                    document.getElementById('trackingStatus').textContent = 'Hoạt động';
-                    document.getElementById('trackingIndicator').className = 'indicator active';
-                } else {
-                    document.getElementById('trackingStatus').textContent = 'Không phát hiện khuôn mặt';
-                    document.getElementById('trackingIndicator').className = 'indicator inactive';
-                }
-            } catch (err) {
-                console.error('Detection error:', err);
-                document.getElementById('trackingStatus').textContent = 'Lỗi: ' + err.message;
-                document.getElementById('trackingIndicator').className = 'indicator inactive';
-            }
-            
-            requestAnimationFrame(detectFaces);
-        }
-
-        // Khởi động app
+        // Initialize app
         async function init() {
+            console.log('🚀 Starting initialization...');
+            
             try {
-                console.log('Initializing app...');
-                
-                // Step 1: Setup webcam
-                console.log('Step 1: Setting up webcam...');
+                // Setup webcam
                 await setupWebcam();
-                document.getElementById('videoContainer').style.display = 'block';
+                updateLoadingText('Camera sẵn sàng! Đang tải AI model...');
                 
-                // Step 2: Load model
-                console.log('Step 2: Loading AI model...');
-                await loadModel();
+                // Load TensorFlow.js face detection model
+                await tf.setBackend('webgl');
+                await tf.ready();
                 
-                // Step 3: Ẩn loading, hiện UI
-                console.log('Step 3: Showing UI...');
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('status').style.display = 'block';
-                document.getElementById('playground').style.display = 'grid';
-                document.getElementById('instructions').style.display = 'block';
+                const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
+                const detectorConfig = {
+                    runtime: 'mediapipe',
+                    refineLandmarks: true,
+                    maxFaces: 1,
+                    solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh'
+                };
                 
-                // Step 4: Bắt đầu detection
-                console.log('Step 4: Starting face detection...');
-                cursor.style.display = 'none'; // Ẩn cursor ban đầu
-                detectFaces();
+                detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
+                console.log('✅ Model loaded successfully!');
                 
-                console.log('✅ App initialized successfully!');
+                // Hide loading, show calibration
+                document.getElementById('loadingScreen').style.display = 'none';
+                document.getElementById('calibrationScreen').classList.add('active');
+                
+                // Setup calibration
+                document.getElementById('startCalibration').addEventListener('click', startCalibration);
+                document.getElementById('recalibrateBtn').addEventListener('click', () => {
+                    stopTracking();
+                    resetCalibration();
+                    document.getElementById('mainApp').classList.remove('active');
+                    document.getElementById('calibrationScreen').classList.add('active');
+                });
+                
             } catch (error) {
-                console.error('❌ Init error:', error);
-                document.getElementById('loading').innerHTML = `
-                    <p style="color: #ff6b6b;">❌ Lỗi: ${error.message}</p>
-                    <p style="font-size: 14px; margin-top: 10px;">Vui lòng:</p>
-                    <p style="font-size: 14px;">1. Cho phép truy cập camera</p>
-                    <p style="font-size: 14px;">2. Sử dụng trình duyệt Chrome/Edge</p>
-                    <p style="font-size: 14px;">3. Tải lại trang (F5)</p>
-                    <button onclick="location.reload()" style="margin-top: 15px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Tải lại trang</button>
+                console.error('❌ Initialization error:', error);
+                document.getElementById('loadingText').innerHTML = `
+                    <div style="color: #ff6b6b;">❌ Lỗi: ${error.message}</div>
+                    <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">Thử lại</button>
                 `;
             }
         }
 
-        // Chạy khi trang load xong
-        window.addEventListener('load', () => {
-            console.log('Page loaded, starting init...');
-            init();
-        });
+        function updateLoadingText(text) {
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        async function setupWebcam() {
+            video = document.getElementById('webcam');
+            
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: 640,
+                    height: 480,
+                    facingMode: 'user'
+                }
+            });
+            
+            video.srcObject = stream;
+            
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    video.play();
+                    console.log('📹 Webcam ready');
+                    resolve(video);
+                };
+            });
+        }
+
+        // Calibration
+        function startCalibration() {
+            isCalibrating = true;
+            calibrationData = [];
+            
+            document.getElementById('calibrationInfo').style.display = 'none';
+            document.getElementById('calibrationProgress').style.display = 'block';
+            
+            showCalibrationPoint(0);
+        }
+
+        function showCalibrationPoint(index) {
+            if (index >= 9) {
+                finishCalibration();
+                return;
+            }
+            
+            document.getElementById('currentPoint').textContent = index + 1;
+            
+            const point = document.getElementById(`point-${index}`);
+            point.classList.add('active');
+            
+            point.onclick = async () => {
+                // Record calibration data
+                const rect = point.getBoundingClientRect();
+                const targetX = rect.left + rect.width / 2;
+                const targetY = rect.top + rect.height / 2;
+                
+                // Get current eye features
+                const faces = await detector.estimateFaces(video);
+                if (faces.length > 0) {
+                    const features = extractEyeFeatures(faces[0]);
+                    calibrationData.push({
+                        features: features,
+                        x: targetX / window.innerWidth,
+                        y: targetY / window.innerHeight
+                    });
+                    
+                    console.log(`✅ Calibration point ${index + 1} recorded`);
+                }
+                
+                point.classList.remove('active');
+                showCalibrationPoint(index + 1);
+            };
+        }
+
+        function extractEyeFeatures(face) {
+            const keypoints = face.keypoints;
+            
+            // Get iris centers
+            const leftIris = keypoints[468];
+            const rightIris = keypoints[473];
+            
+            // Get eye corners for normalization
+            const leftEyeInner = keypoints[133];
+            const rightEyeInner = keypoints[362];
+            const leftEyeOuter = keypoints[33];
+            const rightEyeOuter = keypoints[263];
+            
+            // Calculate inter-ocular distance for normalization
+            const interOcularDist = Math.sqrt(
+                Math.pow(rightEyeInner.x - leftEyeInner.x, 2) +
+                Math.pow(rightEyeInner.y - leftEyeInner.y, 2)
+            );
+            
+            // Normalize features
+            return [
+                (leftIris.x - leftEyeInner.x) / interOcularDist,
+                (leftIris.y - leftEyeInner.y) / interOcularDist,
+                (rightIris.x - rightEyeInner.x) / interOcularDist,
+                (rightIris.y - rightEyeInner.y) / interOcularDist,
+                (leftIris.x - leftEyeOuter.x) / interOcularDist,
+                (leftIris.y - leftEyeOuter.y) / interOcularDist,
+                (rightIris.x - rightEyeOuter.x) / interOcularDist,
+                (rightIris.y - rightEyeOuter.y) / interOcularDist
+            ];
+        }
+
+        async function finishCalibration() {
+            console.log('🎯 Training gaze model with', calibrationData.length, 'samples...');
+            
+            // Train simple linear regression model
+            await trainGazeModel();
+            
+            // Calibrate blink threshold
+            await calibrateBlinkThreshold();
+            
+            // Hide calibration, show main app
+            document.getElementById('calibrationScreen').classList.remove('active');
+            document.getElementById('mainApp').classList.add('active');
+            
+            // Start tracking
+            startTracking();
+        }
+
+        async function trainGazeModel() {
+            // Prepare training data
+            const xs = tf.tensor2d(calibrationData.map(d => d.features));
+            const ys = tf.tensor2d(calibrationData.map(d => [d.x, d.y]));
+            
+            // Create model
+            gazeModel = tf.sequential();
+            gazeModel.add(tf.layers.dense({
+                units: 64,
+                activation: 'relu',
+                inputShape: [8]
+            }));
+            gazeModel.add(tf.layers.dropout({ rate: 0.2 }));
+            gazeModel.add(tf.layers.dense({
+                units: 32,
+                activation: 'relu'
+            }));
+            gazeModel.add(tf.layers.dense({
+                units: 2,
+                activation: 'linear'
+            }));
+            
+            gazeModel.compile({
+                optimizer: tf.train.adam(0.001),
+                loss: 'meanSquaredError'
+            });
+            
+            // Train
+            await gazeModel.fit(xs, ys, {
+                epochs: 50,
+                batchSize: 8,
+                verbose: 0
+            });
+            
+            console.log('✅ Gaze model trained!');
+            
+            xs.dispose();
+            ys.dispose();
+        }
+
+        async function calibrateBlinkThreshold() {
+            console.log('👁️ Calibrating blink threshold...');
+            
+            const earSamples = [];
+            
+            for (let i = 0; i < 60; i++) {
+                const faces = await detector.estimateFaces(video);
+                if (faces.length > 0) {
+                    const ear = calculateAverageEAR(faces[0]);
+                    if (ear > 0) earSamples.push(ear);
+                }
+                await sleep(33); // ~30fps
+            }
+            
+            if (earSamples.length > 0) {
+                earSamples.sort((a, b) => a - b);
+                const median = earSamples[Math.floor(earSamples.length / 2)];
+                const min = Math.min(...earSamples);
+                earThreshold = ((median + min) / 2) * 0.8;
+                console.log('✅ Blink threshold calibrated:', earThreshold.toFixed(3));
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Tracking loop
+        function startTracking() {
+            console.log('▶️ Starting tracking loop...');
+            document.getElementById('eyeCursor').classList.add('active');
+            trackingLoop();
+        }
+
+        function stopTracking() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            document.getElementById('eyeCursor').classList.remove('active');
+        }
+
+        async function trackingLoop() {
+            try {
+                const faces = await detector.estimateFaces(video);
+                
+                if (faces.length > 0) {
+                    const face = faces[0];
+                    
+                    // Update gaze
+                    await updateGaze(face);
+                    
+                    // Detect blink
+                    detectBlink(face);
+                    
+                    // Update status
+                    document.getElementById('trackingStatus').textContent = 'Hoạt động';
+                    document.getElementById('trackingIndicator').classList.add('active');
+                } else {
+                    document.getElementById('trackingStatus').textContent = 'Không phát hiện';
+                    document.getElementById('trackingIndicator').classList.remove('active');
+                }
+                
+                // Update FPS
+                updateFPS();
+                
+            } catch (error) {
+                console.error('Tracking error:', error);
+            }
+            
+            animationFrameId = requestAnimationFrame(trackingLoop);
+        }
+
+        async function updateGaze(face) {
+            if (!gazeModel) return;
+            
+            const features = extractEyeFeatures(face);
+            const featureTensor = tf.tensor2d([features]);
+            
+            const prediction = gazeModel.predict(featureTensor);
+            const [normalizedX, normalizedY] = await prediction.data();
+            
+            currentGazeX = normalizedX * window.innerWidth;
+            currentGazeY = normalizedY * window.innerHeight;
+            
+            // Smooth movement
+            const cursor = document.getElementById('eyeCursor');
+            cursor.style.left = currentGazeX + 'px';
+            cursor.style.top = currentGazeY + 'px';
+            
+            // Check if gazing at target
+            checkGazeTargets();
+            
+            featureTensor.dispose();
+            prediction.dispose();
+        }
+
+        function checkGazeTargets() {
+            const targets = document.querySelectorAll('.target-box');
+            
+            targets.forEach(target => {
+                const rect = target.getBoundingClientRect();
+                const isGazed = 
+                    currentGazeX >= rect.left &&
+                    currentGazeX <= rect.right &&
+                    currentGazeY >= rect.top &&
+                    currentGazeY <= rect.bottom;
+                
+                if (isGazed) {
+                    target.classList.add('gazed');
+                } else {
+                    target.classList.remove('gazed');
+                }
+            });
+        }
+
+        function calculateAverageEAR(face) {
+            const keypoints = face.keypoints;
+            
+            // Left eye points
+            const leftEye = [
+                keypoints[33],   // outer
+                keypoints[160],  // top
+                keypoints[158],  // top
+                keypoints[133],  // inner
+                keypoints[153],  // bottom
+                keypoints[144]   // bottom
+            ];
+            
+            // Right eye points
+            const rightEye = [
+                keypoints[362],  // outer
+                keypoints[385],  // top
+                keypoints[387],  // top
+                keypoints[263],  // inner
+                keypoints[373],  // bottom
+                keypoints[380]   // bottom
+            ];
+            
+            const leftEAR = calculateEAR(leftEye);
+            const rightEAR = calculateEAR(rightEye);
+            
+            return (leftEAR + rightEAR) / 2.0;
+        }
+
+        function calculateEAR(eyePoints) {
+            const euclidean = (p1, p2) => 
+                Math.sqrt(
+                    Math.pow(p1.x - p2.x, 2) + 
+                    Math.pow(p1.y - p2.y, 2)
+                );
+            
+            const vertical1 = euclidean(eyePoints[1], eyePoints[5]);
+            const vertical2 = euclidean(eyePoints[2], eyePoints[4]);
+            const horizontal = euclidean(eyePoints[0], eyePoints[3]);
+            
+            return (vertical1 + vertical2) / (2.0 * horizontal);
+        }
+
+        function detectBlink(face) {
+            const ear = calculateAverageEAR(face);
+            
+            // Update EAR history for dynamic threshold
+            earHistory.push(ear);
+            if (earHistory.length > EAR_HISTORY_SIZE) {
+                earHistory.shift();
+            }
+            
+            // Update debug display
+            document.getElementById('earValue').textContent = ear.toFixed(3);
+            document.getElementById('earThreshold').textContent = earThreshold.toFixed(3);
+            
+            // Detect blink
+            if (ear < earThreshold) {
+                consecutiveFramesBelowThreshold++;
+            } else {
+                if (consecutiveFramesBelowThreshold >= CONSEC_FRAMES_FOR_BLINK) {
+                    onBlinkDetected();
+                }
+                consecutiveFramesBelowThreshold = 0;
+            }
+        }
+
+        function onBlinkDetected() {
+            const now = Date.now();
+            if (now - lastBlinkTime < BLINK_COOLDOWN) return;
+            
+            lastBlinkTime = now;
+            blinkCounter++;
+            
+            console.log('😉 Blink detected! Total:', blinkCounter);
+            
+            // Update UI
+            document.getElementById('blinkCount').textContent = blinkCounter;
+            document.getElementById('blinkIndicator').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('blinkIndicator').classList.remove('active');
+            }, 200);
+            
+            // Visual feedback
+            const cursor = document.getElementById('eyeCursor');
+            cursor.classList.add('blinking');
+            setTimeout(() => {
+                cursor.classList.remove('blinking');
+            }, 300);
+            
+            // Trigger click at gaze position
+            triggerClickAtGaze();
+        }
+
+        function triggerClickAtGaze() {
+            const targets = document.querySelectorAll('.target-box');
+            
+            targets.forEach(target => {
+                const rect = target.getBoundingClientRect();
+                const isHit = 
+                    currentGazeX >= rect.left &&
+                    currentGazeX <= rect.right &&
+                    currentGazeY >= rect.top &&
+                    currentGazeY <= rect.bottom;
+                
+                if (isHit) {
+                    target.classList.add('clicked');
+                    setTimeout(() => {
+                        target.classList.remove('clicked');
+                    }, 500);
+                    
+                    // Change emoji
+                    const emojis = ['🎯', '⭐', '💎', '🎨', '🚀', '🎵', '🌈', '🔥', '✨', '🎪', '🎭', '🎬', '🎮', '🏆', '💫', '🌟', '💥', '🎉'];
+                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    target.firstChild.textContent = randomEmoji;
+                    
+                    console.log('🎯 Clicked target:', target.dataset.id);
+                }
+            });
+        }
+
+        function updateFPS() {
+            frameCount++;
+            const now = Date.now();
+            const elapsed = now - lastFrameTime;
+            
+            if (elapsed >= 1000) {
+                fps = frameCount;
+                document.getElementById('fpsDisplay').textContent = fps;
+                
+                const fpsIndicator = document.getElementById('fpsIndicator');
+                if (fps >= 20) {
+                    fpsIndicator.classList.add('active');
+                } else {
+                    fpsIndicator.classList.remove('active');
+                }
+                
+                frameCount = 0;
+                lastFrameTime = now;
+            }
+        }
+
+        function resetCalibration() {
+            isCalibrating = false;
+            calibrationData = [];
+            gazeModel = null;
+            blinkCounter = 0;
+            
+            document.getElementById('calibrationInfo').style.display = 'block';
+            document.getElementById('calibrationProgress').style.display = 'none';
+            
+            document.querySelectorAll('.calibration-point').forEach(point => {
+                point.classList.remove('active');
+                point.onclick = null;
+            });
+        }
+
+        // Start the app
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
