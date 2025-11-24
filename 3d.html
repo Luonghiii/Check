@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Không gian 3D - Điều khiển bằng Cử chỉ Tay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #video {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 240px;
+            height: 180px;
+            border: 3px solid #00ff88;
+            border-radius: 15px;
+            transform: scaleX(-1);
+            z-index: 10;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+
+        #controls-info {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #00ff88;
+            color: #fff;
+            font-size: 14px;
+            z-index: 10;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+        }
+
+        #controls-info h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        #controls-info .control-item {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #00ff88;
+        }
+
+        #controls-info .control-item strong {
+            color: #00ffff;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        #gesture-status {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 255, 136, 0.9);
+            color: #000;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 18px;
+            z-index: 10;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+            min-width: 200px;
+            text-align: center;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            color: #00ff88;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 255, 136, 0.3);
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hide {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <p style="font-size: 20px;">Đang khởi động camera...</p>
+    </div>
+
+    <div id="canvas-container"></div>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="hand-canvas" style="display: none;"></canvas>
+
+    <div id="controls-info">
+        <h3>🎮 Điều khiển</h3>
+        <div class="control-item">
+            <strong>👌 Chụm 2 ngón (Thumb + Index)</strong>
+            Chọn & tương tác vật thể
+        </div>
+        <div class="control-item">
+            <strong>✋ Bàn tay mở</strong>
+            Xoay camera xung quanh
+        </div>
+        <div class="control-item">
+            <strong>👆 Vuốt lên/xuống</strong>
+            Di chuyển gần/xa
+        </div>
+        <div class="control-item">
+            <strong>👈 Vuốt trái/phải</strong>
+            Di chuyển ngang
+        </div>
+    </div>
+
+    <div id="gesture-status">Sẵn sàng</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+    <script>
+        // Three.js setup
+        let scene, camera, renderer, objects = [];
+        let selectedObject = null;
+        let handX = 0, handY = 0, handZ = 0;
+        let prevHandX = 0, prevHandY = 0;
+        let isPinching = false;
+        let isHandOpen = false;
+
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 15;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x00ff88, 1, 100);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
+
+            const pointLight2 = new THREE.PointLight(0xff0088, 1, 100);
+            pointLight2.position.set(-10, -10, 10);
+            scene.add(pointLight2);
+
+            // Create tech objects
+            createTechObjects();
+
+            // Grid floor
+            const gridHelper = new THREE.GridHelper(50, 50, 0x00ff88, 0x004444);
+            gridHelper.position.y = -5;
+            scene.add(gridHelper);
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function createTechObjects() {
+            // Cube with wireframe
+            const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x00ff88, 
+                emissive: 0x00ff88, 
+                emissiveIntensity: 0.2,
+                transparent: true,
+                opacity: 0.8
+            });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-5, 0, 0);
+            
+            const wireframe = new THREE.LineSegments(
+                new THREE.EdgesGeometry(cubeGeometry),
+                new THREE.LineBasicMaterial({ color: 0x00ffff })
+            );
+            cube.add(wireframe);
+            scene.add(cube);
+            objects.push(cube);
+
+            // Sphere
+            const sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+            const sphereMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xff0088,
+                emissive: 0xff0088,
+                emissiveIntensity: 0.2,
+                transparent: true,
+                opacity: 0.8
+            });
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere.position.set(0, 0, 0);
+            
+            const sphereWireframe = new THREE.LineSegments(
+                new THREE.WireframeGeometry(sphereGeometry),
+                new THREE.LineBasicMaterial({ color: 0xffff00 })
+            );
+            sphere.add(sphereWireframe);
+            scene.add(sphere);
+            objects.push(sphere);
+
+            // Torus
+            const torusGeometry = new THREE.TorusGeometry(1.5, 0.5, 16, 100);
+            const torusMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x00ffff,
+                emissive: 0x00ffff,
+                emissiveIntensity: 0.2,
+                transparent: true,
+                opacity: 0.8
+            });
+            const torus = new THREE.Mesh(torusGeometry, torusMaterial);
+            torus.position.set(5, 0, 0);
+            torus.rotation.x = Math.PI / 4;
+            scene.add(torus);
+            objects.push(torus);
+
+            // Pyramid
+            const pyramidGeometry = new THREE.ConeGeometry(1.5, 3, 4);
+            const pyramidMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffaa00,
+                emissive: 0xffaa00,
+                emissiveIntensity: 0.2,
+                transparent: true,
+                opacity: 0.8
+            });
+            const pyramid = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
+            pyramid.position.set(-2.5, 3, -3);
+            
+            const pyramidWireframe = new THREE.LineSegments(
+                new THREE.EdgesGeometry(pyramidGeometry),
+                new THREE.LineBasicMaterial({ color: 0xffffff })
+            );
+            pyramid.add(pyramidWireframe);
+            scene.add(pyramid);
+            objects.push(pyramid);
+
+            // Octahedron
+            const octaGeometry = new THREE.OctahedronGeometry(1.5);
+            const octaMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xff00ff,
+                emissive: 0xff00ff,
+                emissiveIntensity: 0.2,
+                transparent: true,
+                opacity: 0.8
+            });
+            const octa = new THREE.Mesh(octaGeometry, octaMaterial);
+            octa.position.set(2.5, 3, -3);
+            scene.add(octa);
+            objects.push(octa);
+
+            // Floating particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 50;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.05,
+                color: 0x00ff88,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particles);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate all objects
+            objects.forEach((obj, index) => {
+                obj.rotation.x += 0.005 * (index + 1);
+                obj.rotation.y += 0.005 * (index + 1);
+                
+                // Floating animation
+                obj.position.y += Math.sin(Date.now() * 0.001 + index) * 0.003;
+            });
+
+            // Highlight selected object
+            if (selectedObject) {
+                selectedObject.scale.set(1.2, 1.2, 1.2);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // MediaPipe Hands setup
+        const videoElement = document.getElementById('video');
+        const gestureStatus = document.getElementById('gesture-status');
+
+        function updateGestureStatus(text) {
+            gestureStatus.textContent = text;
+        }
+
+        function distance(point1, point2) {
+            const dx = point1.x - point2.x;
+            const dy = point1.y - point2.y;
+            const dz = point1.z - point2.z;
+            return Math.sqrt(dx * dx + dy * dy + dz * dz);
+        }
+
+        function onResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // Get key points
+                const thumb = landmarks[4];
+                const index = landmarks[8];
+                const middle = landmarks[12];
+                const ring = landmarks[16];
+                const pinky = landmarks[20];
+                const wrist = landmarks[0];
+                const indexBase = landmarks[5];
+
+                // Update hand position
+                handX = index.x * 2 - 1;
+                handY = -(index.y * 2 - 1);
+                handZ = index.z;
+
+                // Detect pinch (thumb + index close)
+                const pinchDistance = distance(thumb, index);
+                const wasPinching = isPinching;
+                isPinching = pinchDistance < 0.05;
+
+                if (isPinching && !wasPinching) {
+                    // Pinch started - select object
+                    selectObjectAtPosition();
+                    updateGestureStatus('✊ Đang chọn vật thể');
+                } else if (!isPinching && wasPinching) {
+                    // Pinch released
+                    if (selectedObject) {
+                        selectedObject.scale.set(1, 1, 1);
+                        selectedObject = null;
+                    }
+                    updateGestureStatus('Sẵn sàng');
+                }
+
+                // Detect open hand (all fingers extended)
+                const fingersExtended = [
+                    landmarks[8].y < landmarks[6].y, // Index
+                    landmarks[12].y < landmarks[10].y, // Middle
+                    landmarks[16].y < landmarks[14].y, // Ring
+                    landmarks[20].y < landmarks[18].y  // Pinky
+                ];
+                isHandOpen = fingersExtended.every(f => f);
+
+                if (isHandOpen && !isPinching) {
+                    // Rotate camera
+                    const deltaX = handX - prevHandX;
+                    const deltaY = handY - prevHandY;
+                    
+                    camera.position.x += deltaX * 5;
+                    camera.position.y += deltaY * 5;
+                    camera.lookAt(0, 0, 0);
+                    
+                    updateGestureStatus('🔄 Xoay camera');
+                }
+
+                // Swipe up/down (move camera closer/farther)
+                const swipeSpeed = handY - prevHandY;
+                if (Math.abs(swipeSpeed) > 0.02 && !isPinching) {
+                    camera.position.z -= swipeSpeed * 20;
+                    camera.position.z = Math.max(5, Math.min(30, camera.position.z));
+                    
+                    if (swipeSpeed > 0) {
+                        updateGestureStatus('👆 Di chuyển gần');
+                    } else {
+                        updateGestureStatus('👇 Di chuyển xa');
+                    }
+                }
+
+                // Swipe left/right (move camera horizontally)
+                const swipeHorizontal = handX - prevHandX;
+                if (Math.abs(swipeHorizontal) > 0.02 && !isPinching && !isHandOpen) {
+                    camera.position.x += swipeHorizontal * 10;
+                    
+                    if (swipeHorizontal > 0) {
+                        updateGestureStatus('👉 Di chuyển phải');
+                    } else {
+                        updateGestureStatus('👈 Di chuyển trái');
+                    }
+                }
+
+                // Update selected object position
+                if (isPinching && selectedObject) {
+                    selectedObject.position.x = handX * 10;
+                    selectedObject.position.y = handY * 5;
+                    selectedObject.rotation.y += 0.05;
+                    updateGestureStatus('🎯 Đang di chuyển vật thể');
+                }
+
+                prevHandX = handX;
+                prevHandY = handY;
+            }
+        }
+
+        function selectObjectAtPosition() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2(handX, handY);
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objects);
+            
+            if (intersects.length > 0) {
+                if (selectedObject) {
+                    selectedObject.scale.set(1, 1, 1);
+                }
+                selectedObject = intersects[0].object;
+            }
+        }
+
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+
+        hands.onResults(onResults);
+
+        const cameraUtils = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480
+        });
+
+        cameraUtils.start().then(() => {
+            document.getElementById('loading').classList.add('hide');
+        });
+
+        // Initialize Three.js
+        initThreeJS();
+    </script>
+</body>
+</html>
