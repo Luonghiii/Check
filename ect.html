@@ -236,10 +236,11 @@
         let clickCount = 0;
         let blinkDetected = false;
         let lastBlinkTime = 0;
-        const BLINK_THRESHOLD = 0.15;
+        const BLINK_THRESHOLD = 3.5; // Ngưỡng tỷ lệ EAR
         const BLINK_COOLDOWN = 500; // ms
         let isModelLoaded = false;
         let isVideoReady = false;
+        let lastEAR = 10; // Eye Aspect Ratio ban đầu
 
         // Khởi tạo webcam
         async function setupWebcam() {
@@ -298,32 +299,66 @@
         function distance(point1, point2) {
             return Math.sqrt(
                 Math.pow(point1[0] - point2[0], 2) +
-                Math.pow(point1[1] - point2[1], 2)
+                Math.pow(point1[1] - point2[1], 2) +
+                Math.pow(point1[2] - point2[2], 2)
             );
         }
 
-        // Phát hiện nháy mắt
+        // Tính Eye Aspect Ratio (EAR) để phát hiện nháy mắt
+        function calculateEAR(eye) {
+            // eye = [p1, p2, p3, p4, p5, p6]
+            // p2-p6 và p3-p5 là chiều dọc
+            // p1-p4 là chiều ngang
+            const vertical1 = distance(eye[1], eye[5]);
+            const vertical2 = distance(eye[2], eye[4]);
+            const horizontal = distance(eye[0], eye[3]);
+            
+            const ear = (vertical1 + vertical2) / (2.0 * horizontal);
+            return ear;
+        }
+
+        // Phát hiện nháy mắt dựa trên EAR
         function detectBlink(landmarks) {
-            // FaceMesh 468 điểm
-            // Left eye: top=159, bottom=145
-            // Right eye: top=386, bottom=374
+            // Left eye indices: 33, 160, 158, 133, 153, 144
+            // Right eye indices: 362, 385, 387, 263, 373, 380
             
-            const leftEyeTop = landmarks[159];
-            const leftEyeBottom = landmarks[145];
-            const rightEyeTop = landmarks[386];
-            const rightEyeBottom = landmarks[374];
+            const leftEye = [
+                landmarks[33],  // outer corner
+                landmarks[160], // top 1
+                landmarks[158], // top 2
+                landmarks[133], // inner corner
+                landmarks[153], // bottom 1
+                landmarks[144]  // bottom 2
+            ];
             
-            if (!leftEyeTop || !leftEyeBottom || !rightEyeTop || !rightEyeBottom) {
+            const rightEye = [
+                landmarks[362], // outer corner
+                landmarks[385], // top 1
+                landmarks[387], // top 2
+                landmarks[263], // inner corner
+                landmarks[373], // bottom 1
+                landmarks[380]  // bottom 2
+            ];
+            
+            // Kiểm tra tất cả điểm có tồn tại
+            const allPointsExist = [...leftEye, ...rightEye].every(p => p && p.length >= 3);
+            if (!allPointsExist) {
                 return false;
             }
             
-            const leftEyeHeight = distance(leftEyeTop, leftEyeBottom);
-            const rightEyeHeight = distance(rightEyeTop, rightEyeBottom);
+            const leftEAR = calculateEAR(leftEye);
+            const rightEAR = calculateEAR(rightEye);
+            const avgEAR = (leftEAR + rightEAR) / 2;
             
-            // Trung bình chiều cao 2 mắt
-            const avgEyeHeight = (leftEyeHeight + rightEyeHeight) / 2;
+            // Debug
+            console.log('EAR:', avgEAR.toFixed(3));
             
-            return avgEyeHeight < BLINK_THRESHOLD;
+            // Nháy mắt khi EAR giảm đột ngột
+            const earDrop = lastEAR - avgEAR;
+            lastEAR = avgEAR;
+            
+            // Nếu EAR giảm hơn 0.05 so với trước đó = nháy mắt
+            return earDrop > 0.05 && avgEAR < 0.2;
         }
 
         // Trigger click event
@@ -371,33 +406,55 @@
                 if (predictions.length > 0) {
                     const keypoints = predictions[0].scaledMesh;
                     
-                    console.log('Keypoints length:', keypoints.length); // Debug
+                    // Sử dụng các điểm quanh mắt để tính hướng nhìn
+                    // Left eye center: 468 (nếu có iris tracking) hoặc dùng 33
+                    // Right eye center: 473 hoặc 263
                     
-                    // FaceMesh trả về 468 điểm
-                    // Left eye: điểm 33, 133, 160, 159, 158, 157, 173
-                    // Right eye: điểm 362, 263, 387, 386, 385, 384, 398
-                    // Dùng điểm giữa mắt: 33 (left), 263 (right)
+                    // Lấy 4 góc của mỗi mắt để tính điểm giữa chính xác
+                    const leftEyeInner = keypoints[133]; // Left inner corner
+                    const leftEyeOuter = keypoints[33];  // Left outer corner
+                    const rightEyeInner = keypoints[362]; // Right inner corner  
+                    const rightEyeOuter = keypoints[263]; // Right outer corner
                     
-                    const leftEye = keypoints[33];   // Left eye center
-                    const rightEye = keypoints[263]; // Right eye center
-                    
-                    if (!leftEye || !rightEye) {
-                        console.error('Eye points not found');
+                    if (!leftEyeInner || !leftEyeOuter || !rightEyeInner || !rightEyeOuter) {
                         requestAnimationFrame(detectFaces);
                         return;
                     }
                     
-                    // Tính trung điểm giữa 2 mắt
-                    const eyeCenterX = (leftEye[0] + rightEye[0]) / 2;
-                    const eyeCenterY = (leftEye[1] + rightEye[1]) / 2;
+                    // Tính điểm giữa mỗi mắt
+                    const leftEyeCenterX = (leftEyeInner[0] + leftEyeOuter[0]) / 2;
+                    const leftEyeCenterY = (leftEyeInner[1] + leftEyeOuter[1]) / 2;
+                    const rightEyeCenterX = (rightEyeInner[0] + rightEyeOuter[0]) / 2;
+                    const rightEyeCenterY = (rightEyeInner[1] + rightEyeOuter[1]) / 2;
                     
-                    // Map vị trí từ video (640x480) sang màn hình
-                    const screenX = window.innerWidth - (eyeCenterX / 640) * window.innerWidth;
-                    const screenY = (eyeCenterY / 480) * window.innerHeight;
+                    // Tính điểm giữa 2 mắt
+                    const gazeCenterX = (leftEyeCenterX + rightEyeCenterX) / 2;
+                    const gazeCenterY = (leftEyeCenterY + rightEyeCenterY) / 2;
                     
-                    // Cập nhật vị trí cursor
-                    cursor.style.left = screenX + 'px';
-                    cursor.style.top = screenY + 'px';
+                    // Lấy điểm mũi để làm reference
+                    const noseTip = keypoints[1]; // Nose tip
+                    
+                    // Tính offset từ mũi đến điểm giữa mắt (hướng nhìn)
+                    const gazeOffsetX = gazeCenterX - noseTip[0];
+                    const gazeOffsetY = gazeCenterY - noseTip[1];
+                    
+                    // Map vị trí từ video sang màn hình
+                    // Video bị mirror nên đảo ngược X
+                    const baseX = window.innerWidth - (gazeCenterX / 640) * window.innerWidth;
+                    const baseY = (gazeCenterY / 480) * window.innerHeight;
+                    
+                    // Thêm offset dựa trên hướng nhìn (amplify để nhạy hơn)
+                    const amplifyFactor = 2.0;
+                    const screenX = baseX - (gazeOffsetX * amplifyFactor);
+                    const screenY = baseY + (gazeOffsetY * amplifyFactor);
+                    
+                    // Giới hạn trong màn hình
+                    const clampedX = Math.max(0, Math.min(window.innerWidth, screenX));
+                    const clampedY = Math.max(0, Math.min(window.innerHeight, screenY));
+                    
+                    // Cập nhật vị trí cursor với smooth transition
+                    cursor.style.left = clampedX + 'px';
+                    cursor.style.top = clampedY + 'px';
                     cursor.style.transform = 'translate(-50%, -50%)';
                     cursor.style.display = 'block';
                     
@@ -405,8 +462,11 @@
                     const isBlink = detectBlink(keypoints);
                     
                     if (isBlink && !blinkDetected) {
-                        blinkDetected = true;
-                        triggerClick(screenX, screenY);
+                        const now = Date.now();
+                        if (now - lastBlinkTime > BLINK_COOLDOWN) {
+                            blinkDetected = true;
+                            triggerClick(clampedX, clampedY);
+                        }
                     } else if (!isBlink) {
                         blinkDetected = false;
                     }
