@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eye Tracking - BlazeFace</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+    <title>WebGazer Eye Tracking - Điều khiển bằng mắt</title>
+    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <style>
         * {
             margin: 0;
@@ -20,6 +19,7 @@
             height: 100vh;
         }
 
+        /* Loading Screen */
         #loadingScreen {
             position: fixed;
             inset: 0;
@@ -48,44 +48,168 @@
         }
 
         #loadingText {
-            font-size: 16px;
+            font-size: 18px;
             margin-top: 10px;
             text-align: center;
             max-width: 500px;
-            padding: 0 20px;
         }
 
-        #mainApp {
+        /* Calibration Screen */
+        #calibrationScreen {
             position: fixed;
             inset: 0;
+            background: rgba(0, 0, 0, 0.95);
             display: none;
+            z-index: 9999;
+        }
+
+        #calibrationScreen.active {
+            display: block;
+        }
+
+        .calibration-info {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 10001;
+            max-width: 600px;
+            padding: 40px;
+        }
+
+        .calibration-info h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #00ff88;
+        }
+
+        .calibration-info p {
+            font-size: 18px;
+            margin: 15px 0;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .calibration-info button {
+            margin-top: 30px;
+            padding: 15px 50px;
+            font-size: 20px;
+            background: #00ff88;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .calibration-info button:hover {
+            background: #00dd77;
+            transform: scale(1.05);
+        }
+
+        .calibration-point {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #ff6b6b 0%, #ff4757 100%);
+            border: 5px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            animation: pulse 1s infinite;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
+            display: none;
+            z-index: 10000;
+        }
+
+        .calibration-point.active {
+            display: block;
+        }
+
+        .calibration-point::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.3); }
+        }
+
+        .calibration-progress {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            z-index: 10001;
+            display: none;
+        }
+
+        .calibration-progress.active {
+            display: block;
+        }
+
+        /* Main App */
+        #mainApp {
+            display: none;
+            position: fixed;
+            inset: 0;
         }
 
         #mainApp.active {
             display: block;
         }
 
-        #videoContainer {
+        /* Hide WebGazer video and canvas */
+        #webgazerVideoFeed {
+            display: none !important;
+        }
+
+        #webgazerFaceFeedbackBox {
+            display: none !important;
+        }
+
+        #webgazerFaceOverlay {
+            display: none !important;
+        }
+
+        /* Custom Video Preview */
+        #videoPreview {
             position: fixed;
             top: 20px;
             right: 20px;
-            width: 240px;
-            height: 180px;
+            width: 200px;
+            height: 150px;
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             z-index: 100;
             border: 3px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.5);
         }
 
-        #webcam {
+        #videoPreview video {
             width: 100%;
             height: 100%;
             object-fit: cover;
             transform: scaleX(-1);
         }
 
-        #eyeCursor {
+        /* Gaze Cursor */
+        #gazeCursor {
             position: fixed;
             width: 40px;
             height: 40px;
@@ -93,28 +217,28 @@
             border-radius: 50%;
             pointer-events: none;
             z-index: 9998;
-            transition: all 0.05s ease;
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
             background: radial-gradient(circle, rgba(0, 255, 136, 0.2) 0%, transparent 70%);
-            display: none;
             transform: translate(-50%, -50%);
+            display: none;
         }
 
-        #eyeCursor.active {
+        #gazeCursor.active {
             display: block;
         }
 
-        #eyeCursor.blinking {
-            animation: blinkEffect 0.3s ease;
+        #gazeCursor.clicking {
+            animation: clickEffect 0.3s ease;
             border-color: #ff6b6b;
             box-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
         }
 
-        @keyframes blinkEffect {
+        @keyframes clickEffect {
             0%, 100% { transform: translate(-50%, -50%) scale(1); }
             50% { transform: translate(-50%, -50%) scale(1.8); }
         }
 
+        /* Status Panel */
         #statusPanel {
             position: fixed;
             top: 20px;
@@ -125,17 +249,17 @@
             border-radius: 15px;
             color: white;
             z-index: 100;
-            min-width: 250px;
+            min-width: 280px;
         }
 
         #statusPanel h3 {
             color: #00ff88;
             margin-bottom: 15px;
-            font-size: 18px;
+            font-size: 20px;
         }
 
         .status-item {
-            margin: 10px 0;
+            margin: 12px 0;
             font-size: 14px;
             display: flex;
             align-items: center;
@@ -155,6 +279,25 @@
             box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
         }
 
+        .panel-button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .panel-button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        /* Target Boxes */
         #targetContainer {
             position: fixed;
             top: 50%;
@@ -214,6 +357,7 @@
             opacity: 0.7;
         }
 
+        /* Instructions */
         #instructions {
             position: fixed;
             bottom: 20px;
@@ -233,64 +377,89 @@
             color: #00ff88;
         }
 
-        #debugPanel {
+        /* Accuracy Display */
+        #accuracyDisplay {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.85);
             color: white;
-            padding: 12px 16px;
+            padding: 10px 20px;
             border-radius: 8px;
-            font-size: 11px;
-            font-family: monospace;
+            font-size: 12px;
             z-index: 100;
-            line-height: 1.6;
-            max-width: 200px;
+            display: none;
         }
 
-        /* Face debug overlay */
-        canvas {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 240px;
-            height: 180px;
-            z-index: 101;
-            pointer-events: none;
-            border-radius: 15px;
+        #accuracyDisplay.active {
+            display: block;
         }
     </style>
 </head>
 <body>
+    <!-- Loading Screen -->
     <div id="loadingScreen">
         <div class="spinner"></div>
-        <div id="loadingText">Đang khởi tạo...</div>
+        <div id="loadingText">Đang khởi tạo WebGazer.js...</div>
     </div>
 
-    <div id="mainApp">
-        <div id="videoContainer">
-            <video id="webcam" autoplay playsinline muted></video>
+    <!-- Calibration Screen -->
+    <div id="calibrationScreen">
+        <div class="calibration-info" id="calibrationInfo">
+            <h2>👁️ Hiệu chuẩn Eye Tracking</h2>
+            <p>WebGazer.js cần bạn hiệu chuẩn để theo dõi chính xác ánh mắt.</p>
+            <p><strong>Cách làm:</strong> Click vào 9 điểm đỏ xuất hiện trên màn hình trong khi nhìn vào chúng.</p>
+            <p><strong>Mẹo:</strong> Giữ đầu ổn định và nhìn thật kỹ vào tâm của mỗi điểm.</p>
+            <button id="startCalibration">Bắt đầu hiệu chuẩn</button>
         </div>
-        <canvas id="debugCanvas"></canvas>
 
-        <div id="eyeCursor"></div>
+        <div class="calibration-progress" id="calibrationProgress">
+            Click vào điểm: <span id="currentPoint">0</span> / 9
+        </div>
 
+        <!-- 9 calibration points -->
+        <div class="calibration-point" id="point-0" style="left: 10%; top: 10%;"></div>
+        <div class="calibration-point" id="point-1" style="left: 50%; top: 10%;"></div>
+        <div class="calibration-point" id="point-2" style="left: 90%; top: 10%;"></div>
+        <div class="calibration-point" id="point-3" style="left: 10%; top: 50%;"></div>
+        <div class="calibration-point" id="point-4" style="left: 50%; top: 50%;"></div>
+        <div class="calibration-point" id="point-5" style="left: 90%; top: 50%;"></div>
+        <div class="calibration-point" id="point-6" style="left: 10%; top: 90%;"></div>
+        <div class="calibration-point" id="point-7" style="left: 50%; top: 90%;"></div>
+        <div class="calibration-point" id="point-8" style="left: 90%; top: 90%;"></div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp">
+        <!-- Video Preview -->
+        <div id="videoPreview">
+            <video id="customVideo" autoplay playsinline muted></video>
+        </div>
+
+        <!-- Gaze Cursor -->
+        <div id="gazeCursor"></div>
+
+        <!-- Status Panel -->
         <div id="statusPanel">
-            <h3>👁️ Eye Tracking</h3>
+            <h3>📊 WebGazer Status</h3>
             <div class="status-item">
                 <span class="status-indicator" id="trackingIndicator"></span>
-                <span>Status: <span id="trackingStatus">Khởi động...</span></span>
+                <span>Tracking: <span id="trackingStatus">Khởi động...</span></span>
             </div>
             <div class="status-item">
-                <span class="status-indicator" id="blinkIndicator"></span>
-                <span>Blinks: <span id="blinkCount">0</span></span>
+                <span class="status-indicator" id="predictionIndicator"></span>
+                <span>Predictions: <span id="predictionCount">0</span></span>
             </div>
             <div class="status-item">
-                <span class="status-indicator" id="fpsIndicator"></span>
-                <span>FPS: <span id="fpsDisplay">0</span></span>
+                <span class="status-indicator" id="clickIndicator"></span>
+                <span>Clicks: <span id="clickCount">0</span></span>
             </div>
+            <button class="panel-button" id="recalibrateBtn">🎯 Hiệu chuẩn lại</button>
+            <button class="panel-button" id="togglePrecisionBtn">🔍 Toggle Precision Mode</button>
         </div>
 
+        <!-- Target Boxes -->
         <div id="targetContainer">
             <div class="target-box" data-id="1">🎯<div class="target-label">Target 1</div></div>
             <div class="target-box" data-id="2">⭐<div class="target-label">Target 2</div></div>
@@ -303,395 +472,266 @@
             <div class="target-box" data-id="9">✨<div class="target-label">Target 9</div></div>
         </div>
 
+        <!-- Instructions -->
         <div id="instructions">
-            <strong>👁️ Di chuyển đầu/mắt</strong> để điều khiển con trỏ | 
-            <strong>😮 Há miệng</strong> để click
+            <strong>👁️ Nhìn</strong> vào các ô để highlight | 
+            <strong>⏱️ Nhìn 1.5 giây</strong> để click (dwell time)
         </div>
 
-        <div id="debugPanel">
-            Face: <span id="faceDetected">--</span><br>
-            Eye dist: <span id="eyeDist">--</span><br>
-            Mouth: <span id="mouthRatio">--</span><br>
-            Gaze: (<span id="gazeX">--</span>, <span id="gazeY">--</span>)
+        <!-- Accuracy Display -->
+        <div id="accuracyDisplay">
+            Accuracy: <span id="accuracyValue">--</span> px | 
+            Precision: <span id="precisionValue">--</span> px
         </div>
     </div>
 
     <script>
-        let model = null;
-        let video = null;
-        let canvas = null;
-        let ctx = null;
-        let isRunning = false;
-        
-        // Click detection (mouth open)
+        let predictionCount = 0;
         let clickCount = 0;
-        let lastClickTime = 0;
-        const CLICK_COOLDOWN = 800;
-        let mouthOpenFrames = 0;
-        const MOUTH_OPEN_THRESHOLD = 0.6; // ratio
-        
-        // Gaze tracking
-        let currentGazeX = window.innerWidth / 2;
-        let currentGazeY = window.innerHeight / 2;
-        let smoothGazeX = currentGazeX;
-        let smoothGazeY = currentGazeY;
-        const SMOOTHING = 0.3;
-        
-        // FPS
-        let fps = 0;
-        let lastFrameTime = Date.now();
-        let frameCount = 0;
-        let successCount = 0;
-        let attemptCount = 0;
+        let currentGazeX = 0;
+        let currentGazeY = 0;
+        let calibrationStep = 0;
+        let isCalibrating = false;
+        let dwellTimers = {};
+        const DWELL_TIME = 1500; // 1.5 seconds
+        let precisionMode = false;
 
         async function init() {
+            console.log('🚀 Initializing WebGazer...');
+            
             try {
-                updateLoadingText('🎥 Đang yêu cầu quyền camera...');
-                await setupWebcam();
+                // Setup WebGazer
+                await webgazer.setRegression('ridge')
+                    .setTracker('TFFacemesh')
+                    .setGazeListener((data, timestamp) => {
+                        if (data == null) return;
+                        
+                        currentGazeX = data.x;
+                        currentGazeY = data.y;
+                        
+                        updateGazeCursor(data.x, data.y);
+                        checkGazeTargets(data.x, data.y);
+                        
+                        predictionCount++;
+                        if (predictionCount % 10 === 0) {
+                            document.getElementById('predictionCount').textContent = predictionCount;
+                        }
+                    })
+                    .saveDataAcrossSessions(true)
+                    .begin();
+
+                // Hide default WebGazer elements
+                webgazer.showVideoPreview(false)
+                    .showPredictionPoints(false)
+                    .showFaceOverlay(false)
+                    .showFaceFeedbackBox(false);
+
+                console.log('✅ WebGazer initialized!');
                 
-                updateLoadingText('⚙️ Đang khởi tạo TensorFlow...');
-                await tf.setBackend('webgl');
-                await tf.ready();
-                console.log('✅ TensorFlow ready, backend:', tf.getBackend());
+                // Wait a bit for camera to be ready
+                await sleep(1500);
                 
-                updateLoadingText('🤖 Đang tải BlazeFace model...<br><small style="opacity: 0.7;">Model nhẹ, nhanh hơn</small>');
+                // Setup custom video preview
+                setupCustomVideoPreview();
                 
-                model = await blazeface.load();
-                console.log('✅ BlazeFace model loaded!');
-                
-                canvas = document.getElementById('debugCanvas');
-                ctx = canvas.getContext('2d');
-                canvas.width = 240;
-                canvas.height = 180;
-                
-                updateLoadingText('✅ Sẵn sàng!');
-                await sleep(500);
-                
+                // Hide loading, show calibration
                 document.getElementById('loadingScreen').style.display = 'none';
-                document.getElementById('mainApp').classList.add('active');
+                document.getElementById('calibrationScreen').classList.add('active');
                 
-                startTracking();
+                // Setup buttons
+                document.getElementById('startCalibration').addEventListener('click', startCalibration);
+                document.getElementById('recalibrateBtn').addEventListener('click', recalibrate);
+                document.getElementById('togglePrecisionBtn').addEventListener('click', togglePrecisionMode);
                 
-            } catch (error) {
-                console.error('❌ Error:', error);
-                handleError(error);
-            }
-        }
-
-        function updateLoadingText(html) {
-            document.getElementById('loadingText').innerHTML = html;
-        }
-
-        async function setupWebcam() {
-            video = document.getElementById('webcam');
-            
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
-                        facingMode: 'user'
-                    },
-                    audio: false
-                });
-                
-                video.srcObject = stream;
-                
-                return new Promise((resolve, reject) => {
-                    video.onloadedmetadata = () => {
-                        video.play()
-                            .then(() => {
-                                console.log('✅ Webcam ready:', video.videoWidth, 'x', video.videoHeight);
-                                resolve();
-                            })
-                            .catch(reject);
-                    };
-                    video.onerror = reject;
-                });
-            } catch (err) {
-                console.error('Camera error:', err);
-                throw err;
-            }
-        }
-
-        function startTracking() {
-            console.log('▶️ Starting tracking...');
-            isRunning = true;
-            document.getElementById('eyeCursor').classList.add('active');
-            trackingLoop();
-        }
-
-        async function trackingLoop() {
-            if (!isRunning) return;
-            
-            try {
-                attemptCount++;
-                
-                const predictions = await model.estimateFaces(video, false);
-                
-                // Clear canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                if (predictions.length > 0) {
-                    successCount++;
-                    const face = predictions[0];
-                    
-                    // Draw face box for debugging
-                    drawFaceDebug(face);
-                    
-                    // Update gaze based on face position
-                    updateGazeFromFace(face);
-                    
-                    // Detect mouth open for clicking
-                    detectMouthOpen(face);
-                    
-                    checkGazeTargets();
-                    
-                    document.getElementById('trackingStatus').textContent = 'Hoạt động ✓';
-                    document.getElementById('trackingIndicator').classList.add('active');
-                    document.getElementById('faceDetected').textContent = '✓ Yes';
-                    
-                    if (attemptCount % 60 === 0) {
-                        console.log(`✅ Detection: ${successCount}/${attemptCount} (${Math.round(successCount/attemptCount*100)}%)`);
-                    }
-                } else {
-                    document.getElementById('trackingStatus').textContent = 'Không thấy mặt';
-                    document.getElementById('trackingIndicator').classList.remove('active');
-                    document.getElementById('faceDetected').textContent = '✗ No';
-                }
-                
-                updateFPS();
+                // Update status
+                document.getElementById('trackingStatus').textContent = 'Sẵn sàng';
+                document.getElementById('trackingIndicator').classList.add('active');
                 
             } catch (error) {
-                console.error('❌ Tracking error:', error);
-            }
-            
-            requestAnimationFrame(trackingLoop);
-        }
-
-        function drawFaceDebug(face) {
-            const start = face.topLeft;
-            const end = face.bottomRight;
-            const size = [end[0] - start[0], end[1] - start[1]];
-            
-            // Scale to canvas size
-            const scaleX = canvas.width / video.videoWidth;
-            const scaleY = canvas.height / video.videoHeight;
-            
-            // Draw face box
-            ctx.strokeStyle = '#00ff88';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(
-                start[0] * scaleX,
-                start[1] * scaleY,
-                size[0] * scaleX,
-                size[1] * scaleY
-            );
-            
-            // Draw landmarks
-            if (face.landmarks) {
-                ctx.fillStyle = '#ff6b6b';
-                face.landmarks.forEach(landmark => {
-                    ctx.beginPath();
-                    ctx.arc(
-                        landmark[0] * scaleX,
-                        landmark[1] * scaleY,
-                        3, 0, 2 * Math.PI
-                    );
-                    ctx.fill();
-                });
+                console.error('❌ Initialization error:', error);
+                document.getElementById('loadingText').innerHTML = `
+                    <div style="color: #ff6b6b; margin-bottom: 15px;">❌ Lỗi khởi tạo</div>
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">${error.message}</div>
+                    <button onclick="location.reload()" style="padding: 12px 30px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">🔄 Thử lại</button>
+                `;
             }
         }
 
-        function updateGazeFromFace(face) {
-            // Use face center for gaze tracking
-            const start = face.topLeft;
-            const end = face.bottomRight;
+        function setupCustomVideoPreview() {
+            const video = document.getElementById('webgazerVideoFeed');
+            const customVideo = document.getElementById('customVideo');
             
-            const faceCenterX = (start[0] + end[0]) / 2;
-            const faceCenterY = (start[1] + end[1]) / 2;
-            
-            // Normalize to 0-1
-            const normalizedX = faceCenterX / video.videoWidth;
-            const normalizedY = faceCenterY / video.videoHeight;
-            
-            // Invert X for mirror effect
-            const invertedX = 1 - normalizedX;
-            
-            // Map to screen with sensitivity
-            const sensitivity = 1.8;
-            currentGazeX = ((invertedX - 0.5) * sensitivity + 0.5) * window.innerWidth;
-            currentGazeY = ((normalizedY - 0.5) * sensitivity + 0.5) * window.innerHeight;
-            
-            // Smooth
-            smoothGazeX = smoothGazeX * (1 - SMOOTHING) + currentGazeX * SMOOTHING;
-            smoothGazeY = smoothGazeY * (1 - SMOOTHING) + currentGazeY * SMOOTHING;
-            
-            // Clamp
-            smoothGazeX = Math.max(0, Math.min(window.innerWidth, smoothGazeX));
-            smoothGazeY = Math.max(0, Math.min(window.innerHeight, smoothGazeY));
-            
-            // Update cursor
-            const cursor = document.getElementById('eyeCursor');
-            cursor.style.left = smoothGazeX + 'px';
-            cursor.style.top = smoothGazeY + 'px';
-            
-            // Update debug
-            document.getElementById('gazeX').textContent = Math.round(smoothGazeX);
-            document.getElementById('gazeY').textContent = Math.round(smoothGazeY);
+            if (video && video.srcObject) {
+                customVideo.srcObject = video.srcObject;
+            }
         }
 
-        function detectMouthOpen(face) {
-            if (!face.landmarks || face.landmarks.length < 6) {
-                mouthOpenFrames = 0;
+        function startCalibration() {
+            console.log('📍 Starting calibration...');
+            isCalibrating = true;
+            calibrationStep = 0;
+            
+            document.getElementById('calibrationInfo').style.display = 'none';
+            document.getElementById('calibrationProgress').classList.add('active');
+            
+            showCalibrationPoint(0);
+        }
+
+        function showCalibrationPoint(index) {
+            if (index >= 9) {
+                finishCalibration();
                 return;
             }
             
-            // BlazeFace landmarks: 0-right eye, 1-left eye, 2-nose, 3-mouth, 4-right ear, 5-left ear
-            const rightEye = face.landmarks[0];
-            const leftEye = face.landmarks[1];
-            const mouth = face.landmarks[3];
+            document.getElementById('currentPoint').textContent = index + 1;
             
-            // Calculate eye distance (reference)
-            const eyeDist = Math.sqrt(
-                Math.pow(leftEye[0] - rightEye[0], 2) +
-                Math.pow(leftEye[1] - rightEye[1], 2)
-            );
+            const point = document.getElementById(`point-${index}`);
+            point.classList.add('active');
             
-            // Calculate mouth-to-eye distance
-            const eyeCenter = [
-                (leftEye[0] + rightEye[0]) / 2,
-                (leftEye[1] + rightEye[1]) / 2
-            ];
+            let clicksNeeded = 5;
+            let clicks = 0;
             
-            const mouthDist = Math.sqrt(
-                Math.pow(mouth[0] - eyeCenter[0], 2) +
-                Math.pow(mouth[1] - eyeCenter[1], 2)
-            );
-            
-            const mouthRatio = mouthDist / eyeDist;
-            
-            // Update debug
-            document.getElementById('eyeDist').textContent = eyeDist.toFixed(1);
-            document.getElementById('mouthRatio').textContent = mouthRatio.toFixed(2);
-            
-            // Detect mouth open
-            if (mouthRatio > MOUTH_OPEN_THRESHOLD) {
-                mouthOpenFrames++;
-                if (mouthOpenFrames >= 5) { // 5 frames = ~150ms
-                    onClickDetected();
-                    mouthOpenFrames = 0;
+            point.onclick = () => {
+                clicks++;
+                console.log(`📍 Calibration point ${index + 1}, click ${clicks}/${clicksNeeded}`);
+                
+                if (clicks >= clicksNeeded) {
+                    point.classList.remove('active');
+                    point.onclick = null;
+                    
+                    setTimeout(() => {
+                        showCalibrationPoint(index + 1);
+                    }, 300);
                 }
+            };
+        }
+
+        function finishCalibration() {
+            console.log('✅ Calibration complete!');
+            isCalibrating = false;
+            
+            document.getElementById('calibrationScreen').classList.remove('active');
+            document.getElementById('mainApp').classList.add('active');
+            
+            // Show gaze cursor
+            document.getElementById('gazeCursor').classList.add('active');
+            
+            // Start prediction indicator
+            document.getElementById('predictionIndicator').classList.add('active');
+            
+            console.log('👁️ WebGazer is now tracking!');
+        }
+
+        function recalibrate() {
+            console.log('🔄 Recalibrating...');
+            
+            // Reset calibration points
+            document.querySelectorAll('.calibration-point').forEach(point => {
+                point.classList.remove('active');
+                point.onclick = null;
+            });
+            
+            // Reset progress
+            document.getElementById('calibrationInfo').style.display = 'block';
+            document.getElementById('calibrationProgress').classList.remove('active');
+            
+            // Hide main app, show calibration
+            document.getElementById('mainApp').classList.remove('active');
+            document.getElementById('calibrationScreen').classList.add('active');
+        }
+
+        function togglePrecisionMode() {
+            precisionMode = !precisionMode;
+            
+            if (precisionMode) {
+                // Store current data to localStorage
+                webgazer.saveDataAcrossSessions(true);
+                document.getElementById('togglePrecisionBtn').textContent = '🔍 Precision Mode: ON';
+                console.log('✅ Precision mode enabled');
             } else {
-                mouthOpenFrames = 0;
+                document.getElementById('togglePrecisionBtn').textContent = '🔍 Precision Mode: OFF';
+                console.log('⏸️ Precision mode disabled');
             }
         }
 
-        function onClickDetected() {
-            const now = Date.now();
-            if (now - lastClickTime < CLICK_COOLDOWN) return;
-            
-            lastClickTime = now;
-            clickCount++;
-            
-            console.log('😮 Click detected! Total:', clickCount);
-            
-            document.getElementById('blinkCount').textContent = clickCount;
-            document.getElementById('blinkIndicator').classList.add('active');
-            setTimeout(() => {
-                document.getElementById('blinkIndicator').classList.remove('active');
-            }, 200);
-            
-            const cursor = document.getElementById('eyeCursor');
-            cursor.classList.add('blinking');
-            setTimeout(() => cursor.classList.remove('blinking'), 300);
-            
-            triggerClickAtGaze();
+        function updateGazeCursor(x, y) {
+            const cursor = document.getElementById('gazeCursor');
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
         }
 
-        function checkGazeTargets() {
+        function checkGazeTargets(gazeX, gazeY) {
             const targets = document.querySelectorAll('.target-box');
             
             targets.forEach(target => {
                 const rect = target.getBoundingClientRect();
                 const isGazed = 
-                    smoothGazeX >= rect.left &&
-                    smoothGazeX <= rect.right &&
-                    smoothGazeY >= rect.top &&
-                    smoothGazeY <= rect.bottom;
+                    gazeX >= rect.left &&
+                    gazeX <= rect.right &&
+                    gazeY >= rect.top &&
+                    gazeY <= rect.bottom;
                 
                 if (isGazed) {
                     target.classList.add('gazed');
+                    
+                    // Start dwell timer
+                    const targetId = target.dataset.id;
+                    if (!dwellTimers[targetId]) {
+                        dwellTimers[targetId] = setTimeout(() => {
+                            onDwellClick(target);
+                            dwellTimers[targetId] = null;
+                        }, DWELL_TIME);
+                    }
                 } else {
                     target.classList.remove('gazed');
+                    
+                    // Cancel dwell timer
+                    const targetId = target.dataset.id;
+                    if (dwellTimers[targetId]) {
+                        clearTimeout(dwellTimers[targetId]);
+                        dwellTimers[targetId] = null;
+                    }
                 }
             });
         }
 
-        function triggerClickAtGaze() {
-            const targets = document.querySelectorAll('.target-box');
+        function onDwellClick(target) {
+            clickCount++;
+            console.log('👁️ Dwell click on target:', target.dataset.id);
             
-            targets.forEach(target => {
-                const rect = target.getBoundingClientRect();
-                const isHit = 
-                    smoothGazeX >= rect.left &&
-                    smoothGazeX <= rect.right &&
-                    smoothGazeY >= rect.top &&
-                    smoothGazeY <= rect.bottom;
-                
-                if (isHit) {
-                    target.classList.add('clicked');
-                    setTimeout(() => target.classList.remove('clicked'), 500);
-                    
-                    const emojis = ['🎯','⭐','💎','🎨','🚀','🎵','🌈','🔥','✨','🎪','🎭','🎬','🎮','🏆','💫','🌟','💥','🎉'];
-                    target.firstChild.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-                    
-                    console.log('🎯 Hit target:', target.dataset.id);
-                }
-            });
-        }
-
-        function updateFPS() {
-            frameCount++;
-            const now = Date.now();
+            // Update UI
+            document.getElementById('clickCount').textContent = clickCount;
+            document.getElementById('clickIndicator').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('clickIndicator').classList.remove('active');
+            }, 200);
             
-            if (now - lastFrameTime >= 1000) {
-                fps = frameCount;
-                document.getElementById('fpsDisplay').textContent = fps;
-                
-                const indicator = document.getElementById('fpsIndicator');
-                if (fps >= 15) {
-                    indicator.classList.add('active');
-                } else {
-                    indicator.classList.remove('active');
-                }
-                
-                frameCount = 0;
-                lastFrameTime = now;
-            }
-        }
-
-        function handleError(error) {
-            const errorMessages = {
-                'NotAllowedError': 'Bạn cần cho phép quyền truy cập camera',
-                'NotFoundError': 'Không tìm thấy camera',
-                'NotReadableError': 'Camera đang được sử dụng',
-                'SecurityError': 'Cần HTTPS hoặc localhost'
-            };
+            // Visual feedback on cursor
+            const cursor = document.getElementById('gazeCursor');
+            cursor.classList.add('clicking');
+            setTimeout(() => cursor.classList.remove('clicking'), 300);
             
-            const msg = errorMessages[error.name] || error.message;
+            // Visual feedback on target
+            target.classList.add('clicked');
+            setTimeout(() => target.classList.remove('clicked'), 500);
             
-            updateLoadingText(`
-                <div style="color: #ff6b6b; margin-bottom: 15px;">❌ Lỗi</div>
-                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">${msg}</div>
-                <button onclick="location.reload()" style="padding: 12px 30px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">🔄 Thử lại</button>
-            `);
+            // Change emoji
+            const emojis = ['🎯','⭐','💎','🎨','🚀','🎵','🌈','🔥','✨','🎪','🎭','🎬','🎮','🏆','💫','🌟','💥','🎉'];
+            target.firstChild.textContent = emojis[Math.floor(Math.random() * emojis.length)];
         }
 
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (webgazer) {
+                webgazer.end();
+            }
+        });
+
+        // Start the app
         window.addEventListener('load', init);
     </script>
 </body>
