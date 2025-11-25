@@ -399,36 +399,76 @@
 
         function startTracking() {
             console.log('▶️ Starting tracking...');
+            console.log('Video element:', {
+                readyState: video.readyState,
+                videoWidth: video.videoWidth,
+                videoHeight: video.videoHeight,
+                paused: video.paused,
+                ended: video.ended,
+                currentTime: video.currentTime
+            });
+            
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                console.error('❌ Video dimensions are 0! Waiting 1 second...');
+                setTimeout(startTracking, 1000);
+                return;
+            }
+            
             isRunning = true;
             document.getElementById('eyeCursor').classList.add('active');
             trackingLoop();
         }
 
+        let detectionAttempts = 0;
+        let successfulDetections = 0;
+
         async function trackingLoop() {
             if (!isRunning) return;
             
             try {
+                detectionAttempts++;
+                
+                // Check video state
+                if (video.readyState !== 4) {
+                    console.warn('Video not ready, readyState:', video.readyState);
+                    document.getElementById('trackingStatus').textContent = 'Video đang load...';
+                    requestAnimationFrame(trackingLoop);
+                    return;
+                }
+                
                 const faces = await detector.estimateFaces(video, {
                     flipHorizontal: false
                 });
                 
+                if (detectionAttempts % 60 === 0) {
+                    console.log(`Detection stats: ${successfulDetections}/${detectionAttempts} successful, Video size: ${video.videoWidth}x${video.videoHeight}`);
+                }
+                
                 if (faces.length > 0) {
+                    successfulDetections++;
                     const face = faces[0];
+                    
+                    // Log first successful detection
+                    if (successfulDetections === 1) {
+                        console.log('✅ First face detected! Keypoints:', face.keypoints.length);
+                    }
+                    
                     updateGaze(face);
                     detectBlink(face);
                     checkGazeTargets();
                     
-                    document.getElementById('trackingStatus').textContent = 'Hoạt động';
+                    document.getElementById('trackingStatus').textContent = 'Hoạt động ✓';
                     document.getElementById('trackingIndicator').classList.add('active');
                 } else {
-                    document.getElementById('trackingStatus').textContent = 'Không phát hiện';
+                    document.getElementById('trackingStatus').textContent = `Không phát hiện (${detectionAttempts})`;
                     document.getElementById('trackingIndicator').classList.remove('active');
                 }
                 
                 updateFPS();
                 
             } catch (error) {
-                console.error('Tracking error:', error);
+                console.error('❌ Tracking error:', error);
+                document.getElementById('trackingStatus').textContent = 'Lỗi: ' + error.message;
             }
             
             requestAnimationFrame(trackingLoop);
