@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGazer Eye Tracking - Điều khiển bằng mắt</title>
-    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <title>Face Tracking + Blink to Click</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
     <style>
         * {
             margin: 0;
@@ -19,7 +22,6 @@
             height: 100vh;
         }
 
-        /* Loading Screen */
         #loadingScreen {
             position: fixed;
             inset: 0;
@@ -54,264 +56,132 @@
             max-width: 500px;
         }
 
-        /* Calibration Screen */
-        #calibrationScreen {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            z-index: 9999;
-        }
-
-        #calibrationScreen.active {
-            display: block;
-        }
-
-        .calibration-info {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: white;
-            z-index: 10001;
-            max-width: 600px;
-            padding: 40px;
-        }
-
-        .calibration-info h2 {
-            font-size: 36px;
-            margin-bottom: 20px;
-            color: #00ff88;
-        }
-
-        .calibration-info p {
-            font-size: 18px;
-            margin: 15px 0;
-            opacity: 0.9;
-            line-height: 1.6;
-        }
-
-        .calibration-info button {
-            margin-top: 30px;
-            padding: 15px 50px;
-            font-size: 20px;
-            background: #00ff88;
-            color: #000;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-
-        .calibration-info button:hover {
-            background: #00dd77;
-            transform: scale(1.05);
-        }
-
-        .calibration-point {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            background: radial-gradient(circle, #ff6b6b 0%, #ff4757 100%);
-            border: 5px solid white;
-            border-radius: 50%;
-            cursor: pointer;
-            transform: translate(-50%, -50%);
-            animation: pulse 1s infinite;
-            box-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
-            display: none;
-            z-index: 10000;
-        }
-
-        .calibration-point.active {
-            display: block;
-        }
-
-        .calibration-point::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 10px;
-            height: 10px;
-            background: white;
-            border-radius: 50%;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.3); }
-        }
-
-        .calibration-progress {
-            position: fixed;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 24px;
-            text-align: center;
-            z-index: 10001;
-            display: none;
-        }
-
-        .calibration-progress.active {
-            display: block;
-        }
-
-        /* Main App */
         #mainApp {
-            display: none;
             position: fixed;
             inset: 0;
+            display: none;
         }
 
         #mainApp.active {
             display: block;
         }
 
-        /* Hide WebGazer video and canvas */
-        #webgazerVideoFeed {
-            display: none !important;
-        }
-
-        #webgazerFaceFeedbackBox {
-            display: none !important;
-        }
-
-        #webgazerFaceOverlay {
-            display: none !important;
-        }
-
-        /* Custom Video Preview */
-        #videoPreview {
+        .video-container {
             position: fixed;
             top: 20px;
             right: 20px;
-            width: 200px;
-            height: 150px;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 320px;
+            height: 240px;
             z-index: 100;
-            border: 3px solid rgba(255,255,255,0.3);
-            background: rgba(0,0,0,0.5);
         }
 
-        #videoPreview video {
+        #inputVideo {
+            position: absolute;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            border-radius: 15px;
             transform: scaleX(-1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        /* Gaze Cursor */
-        #gazeCursor {
+        #outputCanvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            border: 3px solid rgba(255,255,255,0.3);
+        }
+
+        #faceCursor {
             position: fixed;
-            width: 40px;
-            height: 40px;
-            border: 3px solid #00ff88;
+            width: 50px;
+            height: 50px;
+            border: 4px solid #00ff88;
             border-radius: 50%;
             pointer-events: none;
             z-index: 9998;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
-            background: radial-gradient(circle, rgba(0, 255, 136, 0.2) 0%, transparent 70%);
-            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.3) 0%, transparent 70%);
             display: none;
+            transform: translate(-50%, -50%);
         }
 
-        #gazeCursor.active {
+        #faceCursor.active {
             display: block;
         }
 
-        #gazeCursor.clicking {
-            animation: clickEffect 0.3s ease;
+        #faceCursor.blinking {
+            animation: blinkAnimation 0.4s ease;
             border-color: #ff6b6b;
-            box-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
+            box-shadow: 0 0 40px rgba(255, 107, 107, 0.9);
         }
 
-        @keyframes clickEffect {
+        @keyframes blinkAnimation {
             0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.8); }
+            50% { transform: translate(-50%, -50%) scale(2); }
         }
 
-        /* Status Panel */
         #statusPanel {
             position: fixed;
             top: 20px;
             left: 20px;
             background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(10px);
-            padding: 20px;
+            padding: 25px;
             border-radius: 15px;
             color: white;
             z-index: 100;
-            min-width: 280px;
+            min-width: 300px;
         }
 
         #statusPanel h3 {
             color: #00ff88;
-            margin-bottom: 15px;
-            font-size: 20px;
+            margin-bottom: 18px;
+            font-size: 22px;
         }
 
         .status-item {
-            margin: 12px 0;
-            font-size: 14px;
+            margin: 14px 0;
+            font-size: 15px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .status-indicator {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             background: #ff6b6b;
-            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+            box-shadow: 0 0 12px rgba(255, 107, 107, 0.5);
         }
 
         .status-indicator.active {
             background: #00ff88;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.5);
+            animation: pulse 2s infinite;
         }
 
-        .panel-button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 14px;
-            transition: all 0.3s;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
 
-        .panel-button:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-        }
-
-        /* Target Boxes */
         #targetContainer {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             display: grid;
-            grid-template-columns: repeat(3, 150px);
-            gap: 20px;
+            grid-template-columns: repeat(3, 160px);
+            gap: 25px;
             z-index: 10;
         }
 
         .target-box {
-            width: 150px;
-            height: 150px;
+            width: 160px;
+            height: 160px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border: 3px solid rgba(255, 255, 255, 0.3);
@@ -320,7 +190,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
+            font-size: 52px;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
@@ -333,133 +203,112 @@
         }
 
         .target-box.gazed {
-            background: rgba(0, 255, 136, 0.2);
+            background: rgba(0, 255, 136, 0.25);
             border-color: #00ff88;
-            transform: scale(1.1);
+            border-width: 4px;
+            transform: scale(1.12);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
         }
 
         .target-box.clicked {
-            animation: targetClick 0.5s ease;
+            animation: targetClickAnim 0.6s ease;
         }
 
-        @keyframes targetClick {
-            0%, 100% { transform: scale(1); }
-            50% { 
-                transform: scale(0.9); 
-                background: rgba(255, 107, 107, 0.4);
-            }
+        @keyframes targetClickAnim {
+            0% { transform: scale(1); }
+            25% { transform: scale(0.85); background: rgba(255, 107, 107, 0.5); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
         }
 
         .target-label {
-            font-size: 12px;
+            font-size: 13px;
             color: white;
-            margin-top: 10px;
-            opacity: 0.7;
+            margin-top: 12px;
+            opacity: 0.8;
+            font-weight: 600;
         }
 
-        /* Instructions */
         #instructions {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(10px);
             color: white;
-            padding: 15px 30px;
-            border-radius: 10px;
+            padding: 18px 35px;
+            border-radius: 12px;
             text-align: center;
             z-index: 100;
-            font-size: 14px;
+            font-size: 15px;
+            line-height: 1.6;
         }
 
         #instructions strong {
             color: #00ff88;
+            font-size: 16px;
         }
 
-        /* Accuracy Display */
-        #accuracyDisplay {
+        #debugPanel {
             position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 30px;
+            right: 30px;
             background: rgba(0, 0, 0, 0.85);
             color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 15px 20px;
+            border-radius: 10px;
             font-size: 12px;
+            font-family: monospace;
             z-index: 100;
-            display: none;
+            line-height: 1.8;
         }
 
-        #accuracyDisplay.active {
-            display: block;
+        .debug-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .debug-label {
+            color: #00ff88;
         }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
     <div id="loadingScreen">
         <div class="spinner"></div>
-        <div id="loadingText">Đang khởi tạo WebGazer.js...</div>
+        <div id="loadingText">Đang khởi tạo camera và AI model...</div>
     </div>
 
-    <!-- Calibration Screen -->
-    <div id="calibrationScreen">
-        <div class="calibration-info" id="calibrationInfo">
-            <h2>👁️ Hiệu chuẩn Eye Tracking</h2>
-            <p>WebGazer.js cần bạn hiệu chuẩn để theo dõi chính xác ánh mắt.</p>
-            <p><strong>Cách làm:</strong> Click vào 9 điểm đỏ xuất hiện trên màn hình trong khi nhìn vào chúng.</p>
-            <p><strong>Mẹo:</strong> Giữ đầu ổn định và nhìn thật kỹ vào tâm của mỗi điểm.</p>
-            <button id="startCalibration">Bắt đầu hiệu chuẩn</button>
-        </div>
-
-        <div class="calibration-progress" id="calibrationProgress">
-            Click vào điểm: <span id="currentPoint">0</span> / 9
-        </div>
-
-        <!-- 9 calibration points -->
-        <div class="calibration-point" id="point-0" style="left: 10%; top: 10%;"></div>
-        <div class="calibration-point" id="point-1" style="left: 50%; top: 10%;"></div>
-        <div class="calibration-point" id="point-2" style="left: 90%; top: 10%;"></div>
-        <div class="calibration-point" id="point-3" style="left: 10%; top: 50%;"></div>
-        <div class="calibration-point" id="point-4" style="left: 50%; top: 50%;"></div>
-        <div class="calibration-point" id="point-5" style="left: 90%; top: 50%;"></div>
-        <div class="calibration-point" id="point-6" style="left: 10%; top: 90%;"></div>
-        <div class="calibration-point" id="point-7" style="left: 50%; top: 90%;"></div>
-        <div class="calibration-point" id="point-8" style="left: 90%; top: 90%;"></div>
-    </div>
-
-    <!-- Main App -->
     <div id="mainApp">
-        <!-- Video Preview -->
-        <div id="videoPreview">
-            <video id="customVideo" autoplay playsinline muted></video>
+        <div class="video-container">
+            <video id="inputVideo" autoplay playsinline muted></video>
+            <canvas id="outputCanvas"></canvas>
         </div>
 
-        <!-- Gaze Cursor -->
-        <div id="gazeCursor"></div>
+        <div id="faceCursor"></div>
 
-        <!-- Status Panel -->
         <div id="statusPanel">
-            <h3>📊 WebGazer Status</h3>
+            <h3>👁️ Face Tracking + Blink</h3>
+            <div class="status-item">
+                <span class="status-indicator" id="faceIndicator"></span>
+                <span>Face: <span id="faceStatus">Đang tìm...</span></span>
+            </div>
             <div class="status-item">
                 <span class="status-indicator" id="trackingIndicator"></span>
-                <span>Tracking: <span id="trackingStatus">Khởi động...</span></span>
+                <span>Tracking: <span id="trackingStatus">Chờ...</span></span>
             </div>
             <div class="status-item">
-                <span class="status-indicator" id="predictionIndicator"></span>
-                <span>Predictions: <span id="predictionCount">0</span></span>
+                <span class="status-indicator" id="blinkIndicator"></span>
+                <span>Blinks: <span id="blinkCount">0</span></span>
             </div>
             <div class="status-item">
-                <span class="status-indicator" id="clickIndicator"></span>
-                <span>Clicks: <span id="clickCount">0</span></span>
+                <span class="status-indicator" id="fpsIndicator"></span>
+                <span>FPS: <span id="fpsDisplay">0</span></span>
             </div>
-            <button class="panel-button" id="recalibrateBtn">🎯 Hiệu chuẩn lại</button>
-            <button class="panel-button" id="togglePrecisionBtn">🔍 Toggle Precision Mode</button>
         </div>
 
-        <!-- Target Boxes -->
         <div id="targetContainer">
             <div class="target-box" data-id="1">🎯<div class="target-label">Target 1</div></div>
             <div class="target-box" data-id="2">⭐<div class="target-label">Target 2</div></div>
@@ -472,266 +321,346 @@
             <div class="target-box" data-id="9">✨<div class="target-label">Target 9</div></div>
         </div>
 
-        <!-- Instructions -->
         <div id="instructions">
-            <strong>👁️ Nhìn</strong> vào các ô để highlight | 
-            <strong>⏱️ Nhìn 1.5 giây</strong> để click (dwell time)
+            <strong>🎯 Di chuyển khuôn mặt</strong> để điều khiển con trỏ<br>
+            <strong>😉 Nháy mắt</strong> để click vào các ô
         </div>
 
-        <!-- Accuracy Display -->
-        <div id="accuracyDisplay">
-            Accuracy: <span id="accuracyValue">--</span> px | 
-            Precision: <span id="precisionValue">--</span> px
+        <div id="debugPanel">
+            <div class="debug-row">
+                <span class="debug-label">Left EAR:</span>
+                <span id="leftEAR">--</span>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">Right EAR:</span>
+                <span id="rightEAR">--</span>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">Avg EAR:</span>
+                <span id="avgEAR">--</span>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">Threshold:</span>
+                <span id="earThreshold">0.20</span>
+            </div>
         </div>
     </div>
 
     <script>
-        let predictionCount = 0;
-        let clickCount = 0;
-        let currentGazeX = 0;
-        let currentGazeY = 0;
-        let calibrationStep = 0;
-        let isCalibrating = false;
-        let dwellTimers = {};
-        const DWELL_TIME = 1500; // 1.5 seconds
-        let precisionMode = false;
+        let faceMesh;
+        let camera;
+        let videoElement;
+        let canvasElement;
+        let canvasCtx;
+        
+        // Face tracking
+        let faceX = window.innerWidth / 2;
+        let faceY = window.innerHeight / 2;
+        let smoothFaceX = faceX;
+        let smoothFaceY = faceY;
+        const SMOOTHING = 0.25;
+        const SENSITIVITY = 2.5;
+        
+        // Blink detection
+        let blinkCount = 0;
+        let lastBlinkTime = 0;
+        let consecutiveBlinkFrames = 0;
+        const BLINK_COOLDOWN = 400;
+        const BLINK_FRAMES_THRESHOLD = 2;
+        let earThreshold = 0.20;
+        let earHistory = [];
+        const EAR_HISTORY_SIZE = 20;
+        
+        // FPS
+        let fps = 0;
+        let lastFrameTime = Date.now();
+        let frameCount = 0;
 
         async function init() {
-            console.log('🚀 Initializing WebGazer...');
-            
             try {
-                // Setup WebGazer
-                await webgazer.setRegression('ridge')
-                    .setTracker('TFFacemesh')
-                    .setGazeListener((data, timestamp) => {
-                        if (data == null) return;
-                        
-                        currentGazeX = data.x;
-                        currentGazeY = data.y;
-                        
-                        updateGazeCursor(data.x, data.y);
-                        checkGazeTargets(data.x, data.y);
-                        
-                        predictionCount++;
-                        if (predictionCount % 10 === 0) {
-                            document.getElementById('predictionCount').textContent = predictionCount;
-                        }
-                    })
-                    .saveDataAcrossSessions(true)
-                    .begin();
-
-                // Hide default WebGazer elements
-                webgazer.showVideoPreview(false)
-                    .showPredictionPoints(false)
-                    .showFaceOverlay(false)
-                    .showFaceFeedbackBox(false);
-
-                console.log('✅ WebGazer initialized!');
+                updateLoadingText('🎥 Đang khởi động camera...');
                 
-                // Wait a bit for camera to be ready
-                await sleep(1500);
+                videoElement = document.getElementById('inputVideo');
+                canvasElement = document.getElementById('outputCanvas');
+                canvasCtx = canvasElement.getContext('2d');
                 
-                // Setup custom video preview
-                setupCustomVideoPreview();
+                updateLoadingText('🤖 Đang tải MediaPipe FaceMesh...');
                 
-                // Hide loading, show calibration
+                faceMesh = new FaceMesh({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                    }
+                });
+                
+                faceMesh.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                
+                faceMesh.onResults(onResults);
+                
+                updateLoadingText('📹 Đang kết nối camera...');
+                
+                camera = new Camera(videoElement, {
+                    onFrame: async () => {
+                        await faceMesh.send({image: videoElement});
+                    },
+                    width: 640,
+                    height: 480
+                });
+                
+                await camera.start();
+                
+                updateLoadingText('✅ Sẵn sàng!');
+                await sleep(500);
+                
                 document.getElementById('loadingScreen').style.display = 'none';
-                document.getElementById('calibrationScreen').classList.add('active');
+                document.getElementById('mainApp').classList.add('active');
+                document.getElementById('faceCursor').classList.add('active');
                 
-                // Setup buttons
-                document.getElementById('startCalibration').addEventListener('click', startCalibration);
-                document.getElementById('recalibrateBtn').addEventListener('click', recalibrate);
-                document.getElementById('togglePrecisionBtn').addEventListener('click', togglePrecisionMode);
-                
-                // Update status
-                document.getElementById('trackingStatus').textContent = 'Sẵn sàng';
-                document.getElementById('trackingIndicator').classList.add('active');
+                console.log('✅ Face tracking + blink detection initialized!');
                 
             } catch (error) {
-                console.error('❌ Initialization error:', error);
-                document.getElementById('loadingText').innerHTML = `
-                    <div style="color: #ff6b6b; margin-bottom: 15px;">❌ Lỗi khởi tạo</div>
-                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">${error.message}</div>
-                    <button onclick="location.reload()" style="padding: 12px 30px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">🔄 Thử lại</button>
-                `;
+                console.error('❌ Init error:', error);
+                handleError(error);
             }
         }
 
-        function setupCustomVideoPreview() {
-            const video = document.getElementById('webgazerVideoFeed');
-            const customVideo = document.getElementById('customVideo');
+        function onResults(results) {
+            // Clear canvas
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             
-            if (video && video.srcObject) {
-                customVideo.srcObject = video.srcObject;
-            }
-        }
-
-        function startCalibration() {
-            console.log('📍 Starting calibration...');
-            isCalibrating = true;
-            calibrationStep = 0;
-            
-            document.getElementById('calibrationInfo').style.display = 'none';
-            document.getElementById('calibrationProgress').classList.add('active');
-            
-            showCalibrationPoint(0);
-        }
-
-        function showCalibrationPoint(index) {
-            if (index >= 9) {
-                finishCalibration();
-                return;
-            }
-            
-            document.getElementById('currentPoint').textContent = index + 1;
-            
-            const point = document.getElementById(`point-${index}`);
-            point.classList.add('active');
-            
-            let clicksNeeded = 5;
-            let clicks = 0;
-            
-            point.onclick = () => {
-                clicks++;
-                console.log(`📍 Calibration point ${index + 1}, click ${clicks}/${clicksNeeded}`);
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
                 
-                if (clicks >= clicksNeeded) {
-                    point.classList.remove('active');
-                    point.onclick = null;
-                    
-                    setTimeout(() => {
-                        showCalibrationPoint(index + 1);
-                    }, 300);
-                }
-            };
-        }
-
-        function finishCalibration() {
-            console.log('✅ Calibration complete!');
-            isCalibrating = false;
-            
-            document.getElementById('calibrationScreen').classList.remove('active');
-            document.getElementById('mainApp').classList.add('active');
-            
-            // Show gaze cursor
-            document.getElementById('gazeCursor').classList.add('active');
-            
-            // Start prediction indicator
-            document.getElementById('predictionIndicator').classList.add('active');
-            
-            console.log('👁️ WebGazer is now tracking!');
-        }
-
-        function recalibrate() {
-            console.log('🔄 Recalibrating...');
-            
-            // Reset calibration points
-            document.querySelectorAll('.calibration-point').forEach(point => {
-                point.classList.remove('active');
-                point.onclick = null;
-            });
-            
-            // Reset progress
-            document.getElementById('calibrationInfo').style.display = 'block';
-            document.getElementById('calibrationProgress').classList.remove('active');
-            
-            // Hide main app, show calibration
-            document.getElementById('mainApp').classList.remove('active');
-            document.getElementById('calibrationScreen').classList.add('active');
-        }
-
-        function togglePrecisionMode() {
-            precisionMode = !precisionMode;
-            
-            if (precisionMode) {
-                // Store current data to localStorage
-                webgazer.saveDataAcrossSessions(true);
-                document.getElementById('togglePrecisionBtn').textContent = '🔍 Precision Mode: ON';
-                console.log('✅ Precision mode enabled');
+                // Draw face mesh
+                drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {color: '#00ff8844', lineWidth: 1});
+                drawConnectors(canvasCtx, landmarks, FACEMESH_RIGHT_EYE, {color: '#ff6b6b', lineWidth: 2});
+                drawConnectors(canvasCtx, landmarks, FACEMESH_LEFT_EYE, {color: '#ff6b6b', lineWidth: 2});
+                
+                // Update face tracking
+                updateFacePosition(landmarks);
+                
+                // Detect blink
+                detectBlink(landmarks);
+                
+                // Update status
+                document.getElementById('faceStatus').textContent = 'Phát hiện ✓';
+                document.getElementById('faceIndicator').classList.add('active');
+                document.getElementById('trackingStatus').textContent = 'Hoạt động';
+                document.getElementById('trackingIndicator').classList.add('active');
+                
             } else {
-                document.getElementById('togglePrecisionBtn').textContent = '🔍 Precision Mode: OFF';
-                console.log('⏸️ Precision mode disabled');
+                document.getElementById('faceStatus').textContent = 'Không thấy';
+                document.getElementById('faceIndicator').classList.remove('active');
+                document.getElementById('trackingStatus').textContent = 'Chờ mặt...';
+                document.getElementById('trackingIndicator').classList.remove('active');
+            }
+            
+            canvasCtx.restore();
+            updateFPS();
+        }
+
+        function updateFacePosition(landmarks) {
+            // Get nose tip (index 1) for face center
+            const noseTip = landmarks[1];
+            
+            // Convert normalized coordinates to screen space
+            const normalizedX = noseTip.x;
+            const normalizedY = noseTip.y;
+            
+            // Invert X for mirror effect
+            const invertedX = 1 - normalizedX;
+            
+            // Map to screen with sensitivity
+            faceX = ((invertedX - 0.5) * SENSITIVITY + 0.5) * window.innerWidth;
+            faceY = ((normalizedY - 0.5) * SENSITIVITY + 0.5) * window.innerHeight;
+            
+            // Smooth movement
+            smoothFaceX = smoothFaceX * (1 - SMOOTHING) + faceX * SMOOTHING;
+            smoothFaceY = smoothFaceY * (1 - SMOOTHING) + faceY * SMOOTHING;
+            
+            // Clamp to screen
+            smoothFaceX = Math.max(0, Math.min(window.innerWidth, smoothFaceX));
+            smoothFaceY = Math.max(0, Math.min(window.innerHeight, smoothFaceY));
+            
+            // Update cursor
+            const cursor = document.getElementById('faceCursor');
+            cursor.style.left = smoothFaceX + 'px';
+            cursor.style.top = smoothFaceY + 'px';
+            
+            // Check gaze targets
+            checkGazeTargets();
+        }
+
+        function detectBlink(landmarks) {
+            const leftEAR = calculateEAR(landmarks, [
+                362, 385, 387, 263, 373, 380  // Left eye
+            ]);
+            
+            const rightEAR = calculateEAR(landmarks, [
+                33, 160, 158, 133, 153, 144  // Right eye
+            ]);
+            
+            const avgEAR = (leftEAR + rightEAR) / 2.0;
+            
+            // Update debug display
+            document.getElementById('leftEAR').textContent = leftEAR.toFixed(3);
+            document.getElementById('rightEAR').textContent = rightEAR.toFixed(3);
+            document.getElementById('avgEAR').textContent = avgEAR.toFixed(3);
+            
+            // Update EAR history for dynamic threshold
+            earHistory.push(avgEAR);
+            if (earHistory.length > EAR_HISTORY_SIZE) {
+                earHistory.shift();
+            }
+            
+            // Detect blink
+            if (avgEAR < earThreshold) {
+                consecutiveBlinkFrames++;
+            } else {
+                if (consecutiveBlinkFrames >= BLINK_FRAMES_THRESHOLD) {
+                    onBlinkDetected();
+                }
+                consecutiveBlinkFrames = 0;
             }
         }
 
-        function updateGazeCursor(x, y) {
-            const cursor = document.getElementById('gazeCursor');
-            cursor.style.left = x + 'px';
-            cursor.style.top = y + 'px';
+        function calculateEAR(landmarks, indices) {
+            const getPoint = (idx) => landmarks[idx];
+            
+            const distance = (p1, p2) => {
+                const dx = (p1.x - p2.x) * videoElement.videoWidth;
+                const dy = (p1.y - p2.y) * videoElement.videoHeight;
+                return Math.sqrt(dx * dx + dy * dy);
+            };
+            
+            // EAR formula: (||p2-p6|| + ||p3-p5||) / (2 * ||p1-p4||)
+            const vertical1 = distance(getPoint(indices[1]), getPoint(indices[5]));
+            const vertical2 = distance(getPoint(indices[2]), getPoint(indices[4]));
+            const horizontal = distance(getPoint(indices[0]), getPoint(indices[3]));
+            
+            return (vertical1 + vertical2) / (2.0 * horizontal);
         }
 
-        function checkGazeTargets(gazeX, gazeY) {
+        function onBlinkDetected() {
+            const now = Date.now();
+            if (now - lastBlinkTime < BLINK_COOLDOWN) return;
+            
+            lastBlinkTime = now;
+            blinkCount++;
+            
+            console.log('😉 Blink detected! Count:', blinkCount);
+            
+            // Update UI
+            document.getElementById('blinkCount').textContent = blinkCount;
+            document.getElementById('blinkIndicator').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('blinkIndicator').classList.remove('active');
+            }, 200);
+            
+            // Cursor animation
+            const cursor = document.getElementById('faceCursor');
+            cursor.classList.add('blinking');
+            setTimeout(() => cursor.classList.remove('blinking'), 400);
+            
+            // Trigger click
+            triggerClickAtGaze();
+        }
+
+        function checkGazeTargets() {
             const targets = document.querySelectorAll('.target-box');
             
             targets.forEach(target => {
                 const rect = target.getBoundingClientRect();
                 const isGazed = 
-                    gazeX >= rect.left &&
-                    gazeX <= rect.right &&
-                    gazeY >= rect.top &&
-                    gazeY <= rect.bottom;
+                    smoothFaceX >= rect.left &&
+                    smoothFaceX <= rect.right &&
+                    smoothFaceY >= rect.top &&
+                    smoothFaceY <= rect.bottom;
                 
                 if (isGazed) {
                     target.classList.add('gazed');
-                    
-                    // Start dwell timer
-                    const targetId = target.dataset.id;
-                    if (!dwellTimers[targetId]) {
-                        dwellTimers[targetId] = setTimeout(() => {
-                            onDwellClick(target);
-                            dwellTimers[targetId] = null;
-                        }, DWELL_TIME);
-                    }
                 } else {
                     target.classList.remove('gazed');
-                    
-                    // Cancel dwell timer
-                    const targetId = target.dataset.id;
-                    if (dwellTimers[targetId]) {
-                        clearTimeout(dwellTimers[targetId]);
-                        dwellTimers[targetId] = null;
-                    }
                 }
             });
         }
 
-        function onDwellClick(target) {
-            clickCount++;
-            console.log('👁️ Dwell click on target:', target.dataset.id);
+        function triggerClickAtGaze() {
+            const targets = document.querySelectorAll('.target-box');
             
-            // Update UI
-            document.getElementById('clickCount').textContent = clickCount;
-            document.getElementById('clickIndicator').classList.add('active');
-            setTimeout(() => {
-                document.getElementById('clickIndicator').classList.remove('active');
-            }, 200);
+            targets.forEach(target => {
+                const rect = target.getBoundingClientRect();
+                const isHit = 
+                    smoothFaceX >= rect.left &&
+                    smoothFaceX <= rect.right &&
+                    smoothFaceY >= rect.top &&
+                    smoothFaceY <= rect.bottom;
+                
+                if (isHit) {
+                    target.classList.add('clicked');
+                    setTimeout(() => target.classList.remove('clicked'), 600);
+                    
+                    // Change emoji
+                    const emojis = ['🎯','⭐','💎','🎨','🚀','🎵','🌈','🔥','✨','🎪','🎭','🎬','🎮','🏆','💫','🌟','💥','🎉','🌺','🦄','🍕','🎸','🚁','⚡'];
+                    target.firstChild.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                    
+                    console.log('🎯 Hit target:', target.dataset.id);
+                }
+            });
+        }
+
+        function updateFPS() {
+            frameCount++;
+            const now = Date.now();
             
-            // Visual feedback on cursor
-            const cursor = document.getElementById('gazeCursor');
-            cursor.classList.add('clicking');
-            setTimeout(() => cursor.classList.remove('clicking'), 300);
+            if (now - lastFrameTime >= 1000) {
+                fps = frameCount;
+                document.getElementById('fpsDisplay').textContent = fps;
+                
+                const indicator = document.getElementById('fpsIndicator');
+                if (fps >= 20) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+                
+                frameCount = 0;
+                lastFrameTime = now;
+            }
+        }
+
+        function updateLoadingText(text) {
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        function handleError(error) {
+            const errorMessages = {
+                'NotAllowedError': 'Bạn cần cho phép quyền truy cập camera',
+                'NotFoundError': 'Không tìm thấy camera',
+                'NotReadableError': 'Camera đang được sử dụng',
+                'SecurityError': 'Cần HTTPS hoặc localhost'
+            };
             
-            // Visual feedback on target
-            target.classList.add('clicked');
-            setTimeout(() => target.classList.remove('clicked'), 500);
+            const msg = errorMessages[error.name] || error.message;
             
-            // Change emoji
-            const emojis = ['🎯','⭐','💎','🎨','🚀','🎵','🌈','🔥','✨','🎪','🎭','🎬','🎮','🏆','💫','🌟','💥','🎉'];
-            target.firstChild.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            updateLoadingText(`
+                <div style="color: #ff6b6b; margin-bottom: 15px;">❌ Lỗi</div>
+                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">${msg}</div>
+                <button onclick="location.reload()" style="padding: 12px 30px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">🔄 Thử lại</button>
+            `);
         }
 
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            if (webgazer) {
-                webgazer.end();
-            }
-        });
-
-        // Start the app
         window.addEventListener('load', init);
     </script>
 </body>
