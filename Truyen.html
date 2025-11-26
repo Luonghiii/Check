@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đọc Truyện - Hand Jumper</title>
+    <title>Manga Reader - Đọc Truyện Tranh Online</title>
     <style>
         * {
             margin: 0;
@@ -15,68 +15,619 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px 0;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
         }
 
         /* Header */
         .header {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px 30px;
-            margin-bottom: 20px;
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+        }
+
+        .search-bar {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 20px;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Section */
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
-        .manga-info {
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
             display: flex;
             align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            font-size: 28px;
+        }
+
+        .view-all {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+            cursor: pointer;
+        }
+
+        .view-all:hover {
+            color: #764ba2;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Slider */
+        .slider-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+            height: 400px;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+            height: 100%;
+        }
+
+        .slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .slide-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .slide-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 30px;
+            color: white;
+        }
+
+        .slide-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .slide-desc {
+            font-size: 14px;
+            opacity: 0.9;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .slider-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .slider-btn {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.3s;
+        }
+
+        .slider-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Grid Layout */
+        .manga-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .manga-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .manga-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.2);
+        }
+
+        .manga-cover {
+            width: 100%;
+            aspect-ratio: 3/4;
+            object-fit: cover;
+        }
+
+        .manga-info {
+            padding: 12px;
+        }
+
+        .manga-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 40px;
+            font-size: 14px;
+        }
+
+        .manga-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .manga-chapter {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .manga-views {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .vip-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* Top Manga List */
+        .top-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .top-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .top-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .top-rank {
+            font-size: 32px;
+            font-weight: 900;
+            color: #667eea;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .top-rank.gold { color: #FFD700; }
+        .top-rank.silver { color: #C0C0C0; }
+        .top-rank.bronze { color: #CD7F32; }
+
+        .top-cover {
+            width: 80px;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .top-info {
+            flex: 1;
+        }
+
+        .top-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .top-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: #666;
+            flex-wrap: wrap;
+        }
+
+        .stat-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: white;
+            padding: 4px 10px;
+            border-radius: 8px;
+        }
+
+        /* Tags */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .tag {
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Search Results */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
+        }
+
+        .search-item:hover {
+            background: #f8f9fa;
+        }
+
+        .search-cover {
+            width: 50px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .search-info {
+            flex: 1;
+        }
+
+        .search-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .search-tags {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Detail Page */
+        .manga-detail {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .manga-cover-large {
+            width: 300px;
+            height: 420px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
+        }
+
+        .manga-info-detail {
+            flex: 1;
+        }
+
+        .manga-title-main {
+            font-size: 32px;
+            font-weight: 800;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .manga-stats-detail {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
 
-        .back-btn {
+        .stat-box {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: transform 0.2s;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
         }
 
-        .back-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .manga-title {
-            flex: 1;
-        }
-
-        .manga-title h1 {
+        .stat-value {
             font-size: 24px;
-            color: #333;
+            font-weight: 700;
             margin-bottom: 5px;
         }
 
-        .chapter-title {
-            font-size: 18px;
-            color: #666;
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
         }
 
-        /* Navigation */
+        .manga-description {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Chapter List */
+        .chapter-list {
+            display: grid;
+            gap: 10px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .chapter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .chapter-item:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .chapter-title {
+            font-weight: 600;
+        }
+
+        .chapter-date {
+            font-size: 13px;
+            opacity: 0.7;
+        }
+
+        /* Reader Page */
+        .reader-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .reader-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .chapter-select {
+            padding: 12px 16px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            min-width: 200px;
+        }
+
         .navigation {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
-            align-items: center;
         }
 
         .nav-btn {
@@ -89,8 +640,6 @@
             font-size: 14px;
             font-weight: 600;
             transition: all 0.3s;
-            flex: 1;
-            min-width: 120px;
         }
 
         .nav-btn:hover:not(:disabled) {
@@ -103,75 +652,6 @@
             cursor: not-allowed;
         }
 
-        .chapter-select {
-            flex: 2;
-            padding: 12px 16px;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            font-size: 14px;
-            background: white;
-            cursor: pointer;
-            min-width: 200px;
-        }
-
-        /* Stats Bar */
-        .stats-bar {
-            display: flex;
-            gap: 20px;
-            padding: 15px;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 10px;
-            margin-top: 15px;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #333;
-            font-size: 14px;
-        }
-
-        .stat-icon {
-            font-size: 18px;
-        }
-
-        /* Reader Container */
-        .reader-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        /* Loading Spinner */
-        .loading {
-            text-align: center;
-            padding: 60px 20px;
-        }
-
-        .spinner {
-            border: 4px solid rgba(102, 126, 234, 0.1);
-            border-left-color: #667eea;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: #666;
-            font-size: 16px;
-        }
-
-        /* Images */
         .images-wrapper {
             display: flex;
             flex-direction: column;
@@ -200,31 +680,7 @@
             font-weight: 600;
         }
 
-        /* Error Message */
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border: 2px solid #fcc;
-        }
-
-        /* Comments Section */
-        .comments-section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
-        }
-
-        .comments-section h2 {
-            margin-bottom: 20px;
-            color: #333;
-        }
-
+        /* Comments */
         .comment {
             background: #f8f9fa;
             padding: 15px;
@@ -244,6 +700,11 @@
             height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
         }
 
         .comment-user {
@@ -261,7 +722,30 @@
             line-height: 1.6;
         }
 
-        /* Scroll to Top Button */
+        /* Back button */
+        .back-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Scroll to Top */
         .scroll-top {
             position: fixed;
             bottom: 30px;
@@ -292,80 +776,226 @@
 
         /* Responsive */
         @media (max-width: 768px) {
-            .manga-info {
-                flex-direction: column;
-                align-items: flex-start;
+            .manga-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 15px;
             }
 
-            .manga-title h1 {
+            .slider-container {
+                height: 300px;
+            }
+
+            .slide-title {
                 font-size: 20px;
             }
 
-            .navigation {
+            .section {
+                padding: 20px 15px;
+            }
+
+            .manga-detail {
                 flex-direction: column;
             }
 
-            .nav-btn, .chapter-select {
+            .manga-cover-large {
                 width: 100%;
+                height: auto;
             }
 
-            .stats-bar {
-                flex-wrap: wrap;
+            .header-content {
+                flex-direction: column;
             }
 
-            .reader-container {
-                padding: 15px;
+            .search-bar {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="manga-info">
-                <button class="back-btn" onclick="goBack()">← Quay lại</button>
-                <div class="manga-title">
-                    <h1 id="mangaName">Hand Jumper</h1>
-                    <p class="chapter-title" id="chapterTitle">Đang tải...</p>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo" onclick="showHomePage()">🎨 MANGA READER</div>
+            <div class="search-bar">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput"
+                    placeholder="Tìm kiếm truyện..."
+                    autocomplete="off"
+                >
+                <button class="search-btn" onclick="performSearch()">Tìm</button>
+                <div class="search-results" id="searchResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HomePage -->
+    <div id="homePage" class="container">
+        <!-- Highlights Slider -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span class="section-icon">⭐</span>
+                    TRUYỆN NỔI BẬT
                 </div>
+            </div>
+            <div class="slider-container">
+                <div class="slider-wrapper" id="sliderWrapper">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Đang tải...</p>
+                    </div>
+                </div>
+                <div class="slider-controls" id="sliderControls" style="display: none;">
+                    <button class="slider-btn" onclick="prevSlide()">←</button>
+                    <button class="slider-btn" onclick="nextSlide()">→</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Rankings -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px;">
+            <!-- Top Fire -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon">🔥</span>
+                        TOP HOT
+                    </div>
+                </div>
+                <div class="top-list" id="topFire">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Coin -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon">💎</span>
+                        TOP DONATE
+                    </div>
+                </div>
+                <div class="top-list" id="topCoin">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manga Lists -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span class="section-icon">📚</span>
+                    DANH SÁCH TRUYỆN
+                </div>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('hot')">🔥 Đang Hot</button>
+                <button class="tab" onclick="switchTab('new')">✨ Mới Đăng</button>
+                <button class="tab" onclick="switchTab('done')">✅ Hoàn Thành</button>
+            </div>
+
+            <div class="manga-grid" id="mangaList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Đang tải...</p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn-primary" onclick="loadMore()">Xem thêm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Page -->
+    <div id="detailPage" class="container hidden">
+        <button class="back-btn" onclick="showHomePage()">← Quay lại trang chủ</button>
+        
+        <div class="section">
+            <div class="manga-detail">
+                <img id="detailCover" class="manga-cover-large" src="" alt="">
+                <div class="manga-info-detail">
+                    <h1 class="manga-title-main" id="detailTitle">Đang tải...</h1>
+                    
+                    <div class="manga-stats-detail" id="detailStats"></div>
+                    
+                    <div class="tags" id="detailTags"></div>
+                    
+                    <div class="manga-description" id="detailDesc"></div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn-primary" onclick="readFirstChapter()">📖 Đọc từ đầu</button>
+                        <button class="btn-primary" onclick="readLastChapter()">📘 Đọc chap mới nhất</button>
+                        <button class="btn-secondary" onclick="followManga()">❤️ Theo dõi</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="tabs">
+                <button class="tab active" onclick="switchDetailTab('chapters')">📑 Danh sách chapter</button>
+                <button class="tab" onclick="switchDetailTab('comments')">💬 Bình luận</button>
+            </div>
+
+            <div id="chaptersTab">
+                <div class="chapter-list" id="chapterList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="commentsTab" class="hidden">
+                <div id="commentsList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reader Page -->
+    <div id="readerPage" class="container hidden">
+        <button class="back-btn" onclick="backToDetail()">← Quay lại trang truyện</button>
+        
+        <div class="section">
+            <div class="reader-header">
+                <div>
+                    <h2 class="reader-title" id="readerMangaName">Đang tải...</h2>
+                    <p id="readerChapterTitle" style="color: #666;">Chapter -</p>
+                </div>
+                <select class="chapter-select" id="readerChapterSelect" onchange="changeReaderChapter()">
+                    <option>Đang tải...</option>
+                </select>
             </div>
 
             <div class="navigation">
-                <button class="nav-btn" id="prevBtn" onclick="previousChapter()">← Chapter trước</button>
-                <select class="chapter-select" id="chapterSelect" onchange="changeChapter()">
-                    <option>Đang tải danh sách chapter...</option>
-                </select>
-                <button class="nav-btn" id="nextBtn" onclick="nextChapter()">Chapter sau →</button>
-            </div>
-
-            <div class="stats-bar">
-                <div class="stat-item">
-                    <span class="stat-icon">👁️</span>
-                    <span id="viewCount">-</span> lượt xem
-                </div>
-                <div class="stat-item">
-                    <span class="stat-icon">📅</span>
-                    <span id="updateDate">-</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-icon">📄</span>
-                    <span id="pageCount">-</span> trang
-                </div>
+                <button class="nav-btn" id="readerPrevBtn" onclick="previousChapter()">← Chapter trước</button>
+                <button class="nav-btn" onclick="scrollToTop()">↑ Lên đầu</button>
+                <button class="nav-btn" id="readerNextBtn" onclick="nextChapter()">Chapter sau →</button>
             </div>
         </div>
 
-        <!-- Reader -->
-        <div class="reader-container">
-            <div class="loading" id="loading">
+        <div class="section">
+            <div id="readerLoading" class="loading">
                 <div class="spinner"></div>
-                <p class="loading-text">Đang tải truyện...</p>
+                <p>Đang tải truyện...</p>
             </div>
-            <div class="images-wrapper" id="imagesContainer"></div>
+            <div class="images-wrapper" id="readerImages"></div>
         </div>
 
-        <!-- Navigation Bottom -->
-        <div class="header">
+        <div class="section">
             <div class="navigation">
                 <button class="nav-btn" onclick="previousChapter()">← Chapter trước</button>
                 <button class="nav-btn" onclick="scrollToTop()">↑ Lên đầu trang</button>
@@ -373,13 +1003,11 @@
             </div>
         </div>
 
-        <!-- Comments -->
-        <div class="comments-section" id="commentsSection">
-            <h2>💬 Bình luận (<span id="commentCount">0</span>)</h2>
-            <div id="commentsContainer">
+        <div class="section">
+            <h2 style="margin-bottom: 20px;">💬 Bình luận</h2>
+            <div id="readerComments">
                 <div class="loading">
                     <div class="spinner"></div>
-                    <p class="loading-text">Đang tải bình luận...</p>
                 </div>
             </div>
         </div>
@@ -389,170 +1017,430 @@
     <button class="scroll-top" id="scrollTopBtn" onclick="scrollToTop()">↑</button>
 
     <script>
-        // Configuration
+        // API Configuration
         const API_BASE = 'https://cmangax8.com/api';
-        const ALBUM_ID = '61394'; // Hand Jumper
+        const AVATAR_BASE = 'https://cmangax8.com/storage/album/';
         
-        let chapters = [];
-        let currentChapterIndex = 0;
-        let currentChapterId = null;
+        // State Management
+        let state = {
+            currentPage: 'home', // home, detail, reader
+            currentTab: 'hot',
+            currentListPage: 1,
+            currentSlide: 0,
+            currentAlbumId: null,
+            currentChapterId: null,
+            currentChapterIndex: 0,
+            highlights: [],
+            chapters: [],
+            searchCache: {},
+            searchTimeout: null,
+            sliderInterval: null
+        };
 
-        // Initialize
+        // ==================== INITIALIZATION ====================
         async function init() {
-            try {
-                // Load manga info
-                await loadMangaInfo();
-                
-                // Load chapters list
-                await loadChapters();
-                
-                // Load first chapter or from URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const chapterNum = urlParams.get('chapter');
-                
-                if (chapterNum) {
-                    const chapterIndex = chapters.findIndex(ch => ch.info.num === chapterNum);
-                    if (chapterIndex !== -1) {
-                        currentChapterIndex = chapterIndex;
-                    }
-                }
-                
-                await loadChapter(chapters[currentChapterIndex].id_chapter);
-                
-                // Load comments
-                loadComments();
-                
-            } catch (error) {
-                console.error('Init error:', error);
-                showError('Không thể tải dữ liệu truyện. Vui lòng thử lại sau.');
-            }
+            setupEventListeners();
+            await loadHomePage();
         }
 
-        // Load manga info
-        async function loadMangaInfo() {
-            try {
-                const response = await fetch(`${API_BASE}/get_data_by_id?id=${ALBUM_ID}&table=album&data=info,data`);
-                const data = await response.json();
-                
-                document.getElementById('mangaName').textContent = data.info.name;
-                document.getElementById('viewCount').textContent = data.info.statics.view.toLocaleString();
-                
-            } catch (error) {
-                console.error('Error loading manga info:', error);
-            }
-        }
-
-        // Load chapters
-        async function loadChapters() {
-            try {
-                const response = await fetch(`${API_BASE}/chapter_list?album=${ALBUM_ID}&page=1&limit=1000&v=4v0`);
-                chapters = await response.json();
-                
-                // Reverse to show from chapter 1
-                chapters.reverse();
-                
-                // Populate select
-                const select = document.getElementById('chapterSelect');
-                select.innerHTML = '';
-                
-                chapters.forEach((chapter, index) => {
-                    const option = document.createElement('option');
-                    option.value = index;
-                    option.textContent = `Chapter ${chapter.info.num}`;
-                    select.appendChild(option);
-                });
-                
-                select.value = currentChapterIndex;
-                
-            } catch (error) {
-                console.error('Error loading chapters:', error);
-                throw error;
-            }
-        }
-
-        // Load chapter
-        async function loadChapter(chapterId) {
-            try {
-                currentChapterId = chapterId;
-                showLoading(true);
-                
-                // Get chapter info
-                const infoResponse = await fetch(`${API_BASE}/chapter_info?id=${chapterId}`);
-                const chapterInfo = await infoResponse.json();
-                
-                // Get images
-                const imagesResponse = await fetch(`${API_BASE}/chapter_image?chapter=${chapterId}&v=0`);
-                const imagesData = await imagesResponse.json();
-                
-                if (imagesData.status !== 1) {
-                    throw new Error('Không thể tải ảnh');
-                }
-                
-                // Update UI
-                document.getElementById('chapterTitle').textContent = `Chapter ${chapterInfo.num}`;
-                document.getElementById('updateDate').textContent = formatDate(chapterInfo.last_update);
-                document.getElementById('pageCount').textContent = imagesData.image.length;
-                
-                // Update chapter select
-                document.getElementById('chapterSelect').value = currentChapterIndex;
-                
-                // Update navigation buttons
-                updateNavigationButtons();
-                
-                // Render images
-                renderImages(imagesData.image);
-                
-                // Update URL
-                const newUrl = `${window.location.pathname}?chapter=${chapterInfo.num}`;
-                window.history.pushState({}, '', newUrl);
-                
-                showLoading(false);
-                
-            } catch (error) {
-                console.error('Error loading chapter:', error);
-                showError('Không thể tải chapter. Vui lòng thử lại sau.');
-                showLoading(false);
-            }
-        }
-
-        // Render images
-        function renderImages(images) {
-            const container = document.getElementById('imagesContainer');
-            container.innerHTML = '';
+        function setupEventListeners() {
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', handleSearchInput);
             
-            images.forEach((imageUrl, index) => {
-                const pageDiv = document.createElement('div');
-                pageDiv.style.width = '100%';
-                
-                const pageNumber = document.createElement('div');
-                pageNumber.className = 'page-number';
-                pageNumber.textContent = `Trang ${index + 1}/${images.length}`;
-                
-                const img = document.createElement('img');
-                img.className = 'page-image';
-                img.src = imageUrl;
-                img.alt = `Page ${index + 1}`;
-                img.loading = 'lazy';
-                
-                img.onerror = function() {
-                    this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23ddd" width="400" height="300"/><text x="50%" y="50%" fill="%23999" text-anchor="middle">Không tải được ảnh</text></svg>';
-                };
-                
-                pageDiv.appendChild(pageNumber);
-                pageDiv.appendChild(img);
-                container.appendChild(pageDiv);
+            // Close search results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.search-bar')) {
+                    document.getElementById('searchResults').classList.remove('show');
+                }
+            });
+
+            // Scroll to top button
+            window.addEventListener('scroll', function() {
+                const scrollTopBtn = document.getElementById('scrollTopBtn');
+                if (window.pageYOffset > 300) {
+                    scrollTopBtn.classList.add('show');
+                } else {
+                    scrollTopBtn.classList.remove('show');
+                }
+            });
+
+            // Keyboard navigation for reader
+            document.addEventListener('keydown', function(e) {
+                if (state.currentPage === 'reader') {
+                    if (e.key === 'ArrowLeft') previousChapter();
+                    else if (e.key === 'ArrowRight') nextChapter();
+                }
             });
         }
 
-        // Load comments
-        async function loadComments() {
+        // ==================== PAGE NAVIGATION ====================
+        function showHomePage() {
+            state.currentPage = 'home';
+            document.getElementById('homePage').classList.remove('hidden');
+            document.getElementById('detailPage').classList.add('hidden');
+            document.getElementById('readerPage').classList.add('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function showDetailPage(albumId) {
+            state.currentPage = 'detail';
+            state.currentAlbumId = albumId;
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('detailPage').classList.remove('hidden');
+            document.getElementById('readerPage').classList.add('hidden');
+            window.scrollTo(0, 0);
+            loadDetailPage(albumId);
+        }
+
+        function showReaderPage(albumId, chapterId) {
+            state.currentPage = 'reader';
+            state.currentAlbumId = albumId;
+            state.currentChapterId = chapterId;
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('detailPage').classList.add('hidden');
+            document.getElementById('readerPage').classList.remove('hidden');
+            window.scrollTo(0, 0);
+            loadReaderPage(chapterId);
+        }
+
+        function backToDetail() {
+            showDetailPage(state.currentAlbumId);
+        }
+
+        // ==================== HOME PAGE ====================
+        async function loadHomePage() {
+            await Promise.all([
+                loadHighlights(),
+                loadTopFire(),
+                loadTopCoin(),
+                loadMangaList('hot', 1)
+            ]);
+            startAutoSlider();
+        }
+
+        // API 8: Highlights
+        async function loadHighlights() {
             try {
-                const response = await fetch(`${API_BASE}/comment_list?album=${ALBUM_ID}&chapter=0&comment=0&limit=20&page=1&sort=suggest`);
+                const response = await fetch(`${API_BASE}/data?data=album`);
+                const data = await response.json();
+                state.highlights = data.highlight.image.slice(0, 5);
+                renderSlider();
+            } catch (error) {
+                console.error('Error loading highlights:', error);
+            }
+        }
+
+        function renderSlider() {
+            const wrapper = document.getElementById('sliderWrapper');
+            wrapper.innerHTML = '';
+            
+            state.highlights.forEach((item) => {
+                const slide = document.createElement('div');
+                slide.className = 'slide';
+                slide.onclick = () => showDetailPage(item.id_album);
+                
+                const avatarUrl = getAvatarUrl(item.info.avatar);
+                
+                slide.innerHTML = `
+                    <img src="${avatarUrl}" class="slide-image" alt="${item.info.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/></svg>'">
+                    <div class="slide-overlay">
+                        <div class="slide-title">${item.info.name}</div>
+                        <div class="slide-desc">${item.info.detail || 'Truyện hay, cập nhật liên tục'}</div>
+                        <div class="tags">
+                            ${item.info.tags.slice(0, 3).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+                wrapper.appendChild(slide);
+            });
+            
+            document.getElementById('sliderControls').style.display = 'flex';
+        }
+
+        function nextSlide() {
+            state.currentSlide = (state.currentSlide + 1) % state.highlights.length;
+            updateSlider();
+        }
+
+        function prevSlide() {
+            state.currentSlide = (state.currentSlide - 1 + state.highlights.length) % state.highlights.length;
+            updateSlider();
+        }
+
+        function updateSlider() {
+            const wrapper = document.getElementById('sliderWrapper');
+            wrapper.style.transform = `translateX(-${state.currentSlide * 100}%)`;
+        }
+
+        function startAutoSlider() {
+            if (state.sliderInterval) clearInterval(state.sliderInterval);
+            state.sliderInterval = setInterval(nextSlide, 5000);
+        }
+
+        // API 13: Top Fire
+        async function loadTopFire() {
+            try {
+                const response = await fetch(`${API_BASE}/home_album_top?file=image&type=fire&limit=5`);
+                const data = await response.json();
+                renderTopList(data.data || [data], 'topFire');
+            } catch (error) {
+                console.error('Error loading top fire:', error);
+            }
+        }
+
+        // API 14: Top Coin
+        async function loadTopCoin() {
+            try {
+                const response = await fetch(`${API_BASE}/home_album_top?file=image&type=coin&limit=5`);
+                const data = await response.json();
+                renderTopList(data.data || [data], 'topCoin');
+            } catch (error) {
+                console.error('Error loading top coin:', error);
+            }
+        }
+
+        function renderTopList(items, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'top-item';
+                div.onclick = () => showDetailPage(item.id_album);
+                
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+                const avatarUrl = getAvatarUrl(item.info.avatar);
+                
+                div.innerHTML = `
+                    <div class="top-rank ${rankClass}">#${index + 1}</div>
+                    <img src="${avatarUrl}" class="top-cover" alt="${item.info.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 80 110%22><rect fill=%22%23ddd%22 width=%2280%22 height=%22110%22/></svg>'">
+                    <div class="top-info">
+                        <div class="top-title">${item.info.name}</div>
+                        <div class="top-stats">
+                            <span class="stat-badge">👁️ ${formatNumber(item.info.statics.view)}</span>
+                            <span class="stat-badge">❤️ ${formatNumber(item.info.statics.follow)}</span>
+                            ${item.score ? `<span class="stat-badge">🔥 ${formatNumber(item.score)}</span>` : ''}
+                        </div>
+                        <div class="tags">
+                            ${item.info.tags.slice(0, 3).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // API 9, 10, 11, 12: Manga Lists
+        async function loadMangaList(type, page) {
+            try {
+                const response = await fetch(
+                    `${API_BASE}/home_album_list?file=image&type=${type}&sort=update&tag=&limit=30&page=${page}`
+                );
+                const data = await response.json();
+                renderMangaGrid(data.data);
+            } catch (error) {
+                console.error('Error loading manga list:', error);
+            }
+        }
+
+        function renderMangaGrid(items) {
+            const container = document.getElementById('mangaList');
+            container.innerHTML = '';
+            
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'manga-card';
+                card.onclick = () => showDetailPage(item.id_album);
+                
+                const avatarUrl = getAvatarUrl(item.info.avatar);
+                
+                card.innerHTML = `
+                    <div style="position: relative;">
+                        <img src="${avatarUrl}" class="manga-cover" alt="${item.info.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 400%22><rect fill=%22%23ddd%22 width=%22300%22 height=%22400%22/></svg>'">
+                        ${item.info.class === 'vip' ? '<div class="vip-badge">VIP</div>' : ''}
+                    </div>
+                    <div class="manga-info">
+                        <div class="manga-name">${item.info.name}</div>
+                        <div class="manga-meta">
+                            <span class="manga-chapter">Ch.${item.info.chapter.last}</span>
+                            <span class="manga-views">👁️ ${formatNumber(item.info.statics.view)}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function switchTab(type) {
+            state.currentTab = type;
+            state.currentListPage = 1;
+            
+            document.querySelectorAll('.tabs .tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadMangaList(type, 1);
+        }
+
+        function loadMore() {
+            state.currentListPage++;
+            loadMangaList(state.currentTab, state.currentListPage);
+        }
+
+        // API 3: Search
+        function handleSearchInput(e) {
+            clearTimeout(state.searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                document.getElementById('searchResults').classList.remove('show');
+                return;
+            }
+            
+            state.searchTimeout = setTimeout(() => performSearchLive(query), 500);
+        }
+
+        async function performSearchLive(query) {
+            if (state.searchCache[query]) {
+                renderSearchResults(state.searchCache[query]);
+                return;
+            }
+            
+            try {
+                const response = await fetch(
+                    `${API_BASE}/search?file=image&type=album&limit=10&string=${encodeURIComponent(query)}`
+                );
+                const data = await response.json();
+                state.searchCache[query] = data;
+                renderSearchResults(data);
+            } catch (error) {
+                console.error('Error searching:', error);
+            }
+        }
+
+        function renderSearchResults(results) {
+            const container = document.getElementById('searchResults');
+            
+            if (!results || results.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Không tìm thấy kết quả</div>';
+                container.classList.add('show');
+                return;
+            }
+            
+            container.innerHTML = '';
+            results.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.onclick = () => {
+                    showDetailPage(item.id_album);
+                    container.classList.remove('show');
+                };
+                
+                const avatarUrl = getAvatarUrl(item.info.avatar);
+                
+                div.innerHTML = `
+                    <img src="${avatarUrl}" class="search-cover" alt="${item.info.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 50 70%22><rect fill=%22%23ddd%22 width=%2250%22 height=%2270%22/></svg>'">
+                    <div class="search-info">
+                        <div class="search-name">${item.info.name}</div>
+                        <div class="search-tags">${item.info.tags.slice(0, 3).join(', ')}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            container.classList.add('show');
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) performSearchLive(query);
+        }
+
+        // ==================== DETAIL PAGE ====================
+        async function loadDetailPage(albumId) {
+            try {
+                // API 7: Get album info
+                const response = await fetch(`${API_BASE}/get_data_by_id?id=${albumId}&table=album&data=info,data`);
                 const data = await response.json();
                 
-                document.getElementById('commentCount').textContent = data.total || 0;
+                // Render manga info
+                document.getElementById('detailTitle').textContent = data.info.name;
+                document.getElementById('detailCover').src = getAvatarUrl(data.info.avatar);
+                document.getElementById('detailDesc').textContent = data.info.detail || 'Chưa có mô tả';
                 
-                const container = document.getElementById('commentsContainer');
+                // Render stats
+                const statsContainer = document.getElementById('detailStats');
+                statsContainer.innerHTML = `
+                    <div class="stat-box">
+                        <div class="stat-value">${formatNumber(data.info.statics.view)}</div>
+                        <div class="stat-label">Lượt xem</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${formatNumber(data.info.statics.follow)}</div>
+                        <div class="stat-label">Theo dõi</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${data.info.chapter.last}</div>
+                        <div class="stat-label">Chapters</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${data.info.status === 'doing' ? 'Đang' : 'Hoàn'}</div>
+                        <div class="stat-label">Trạng thái</div>
+                    </div>
+                `;
+                
+                // Render tags
+                const tagsContainer = document.getElementById('detailTags');
+                tagsContainer.innerHTML = data.info.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+                
+                // Load chapters
+                await loadChaptersList(albumId);
+                
+                // Load comments
+                loadDetailComments(albumId);
+                
+            } catch (error) {
+                console.error('Error loading detail:', error);
+            }
+        }
+
+        // API 5: Chapter List
+        async function loadChaptersList(albumId) {
+            try {
+                const response = await fetch(`${API_BASE}/chapter_list?album=${albumId}&page=1&limit=1000&v=4v0`);
+                state.chapters = await response.json();
+                state.chapters.reverse(); // Show from chapter 1
+                
+                const container = document.getElementById('chapterList');
+                container.innerHTML = '';
+                
+                state.chapters.forEach((chapter, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'chapter-item';
+                    div.onclick = () => {
+                        state.currentChapterIndex = index;
+                        showReaderPage(albumId, chapter.id_chapter);
+                    };
+                    
+                    div.innerHTML = `
+                        <span class="chapter-title">Chapter ${chapter.info.num}</span>
+                        <span class="chapter-date">${formatDate(chapter.info.last_update)}</span>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error loading chapters:', error);
+            }
+        }
+
+        // API 4: Comments
+        async function loadDetailComments(albumId) {
+            try {
+                const response = await fetch(`${API_BASE}/comment_list?album=${albumId}&chapter=0&comment=0&limit=20&page=1&sort=suggest`);
+                const data = await response.json();
+                
+                const container = document.getElementById('commentsList');
                 container.innerHTML = '';
                 
                 if (!data.data || data.data.length === 0) {
@@ -561,75 +1449,192 @@
                 }
                 
                 data.data.forEach(comment => {
-                    const commentDiv = document.createElement('div');
-                    commentDiv.className = 'comment';
-                    commentDiv.innerHTML = `
+                    const div = document.createElement('div');
+                    div.className = 'comment';
+                    div.innerHTML = `
                         <div class="comment-header">
-                            <div class="comment-avatar"></div>
+                            <div class="comment-avatar">${comment.info.name[0]}</div>
                             <div style="flex: 1;">
-                                <div class="comment-user">${comment.info.name} <span style="color: #999; font-weight: normal;">• Level ${comment.info.level}</span></div>
+                                <div class="comment-user">${comment.info.name} <span style="color: #999; font-weight: normal;">• Lv.${comment.info.level}</span></div>
                                 <div class="comment-date">${comment.data.note || ''} • ${formatDate(comment.date)}</div>
                             </div>
                         </div>
                         <div class="comment-text">${escapeHtml(comment.data.text)}</div>
                     `;
-                    container.appendChild(commentDiv);
+                    container.appendChild(div);
                 });
-                
             } catch (error) {
                 console.error('Error loading comments:', error);
             }
         }
 
-        // Navigation functions
+        function switchDetailTab(tab) {
+            document.querySelectorAll('#detailPage .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'chapters') {
+                document.getElementById('chaptersTab').classList.remove('hidden');
+                document.getElementById('commentsTab').classList.add('hidden');
+            } else {
+                document.getElementById('chaptersTab').classList.add('hidden');
+                document.getElementById('commentsTab').classList.remove('hidden');
+            }
+        }
+
+        // API 6: First Chapter
+        function readFirstChapter() {
+            if (state.chapters.length > 0) {
+                state.currentChapterIndex = 0;
+                showReaderPage(state.currentAlbumId, state.chapters[0].id_chapter);
+            }
+        }
+
+        function readLastChapter() {
+            if (state.chapters.length > 0) {
+                state.currentChapterIndex = state.chapters.length - 1;
+                showReaderPage(state.currentAlbumId, state.chapters[state.currentChapterIndex].id_chapter);
+            }
+        }
+
+        function followManga() {
+            alert('Tính năng theo dõi đang được phát triển!');
+        }
+
+        // ==================== READER PAGE ====================
+        async function loadReaderPage(chapterId) {
+            try {
+                document.getElementById('readerLoading').style.display = 'block';
+                document.getElementById('readerImages').innerHTML = '';
+                
+                // API 1: Chapter Info
+                const infoResponse = await fetch(`${API_BASE}/chapter_info?id=${chapterId}`);
+                const chapterInfo = await infoResponse.json();
+                
+                // API 2: Chapter Images
+                const imagesResponse = await fetch(`${API_BASE}/chapter_image?chapter=${chapterId}&v=0`);
+                const imagesData = await imagesResponse.json();
+                
+                if (imagesData.status !== 1) throw new Error('Cannot load images');
+                
+                // Update UI
+                document.getElementById('readerChapterTitle').textContent = `Chapter ${chapterInfo.num}`;
+                
+                // Populate chapter select
+                const select = document.getElementById('readerChapterSelect');
+                select.innerHTML = '';
+                state.chapters.forEach((ch, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `Chapter ${ch.info.num}`;
+                    if (index === state.currentChapterIndex) option.selected = true;
+                    select.appendChild(option);
+                });
+                
+                // Update navigation buttons
+                document.getElementById('readerPrevBtn').disabled = state.currentChapterIndex === 0;
+                document.getElementById('readerNextBtn').disabled = state.currentChapterIndex === state.chapters.length - 1;
+                
+                // Render images
+                const container = document.getElementById('readerImages');
+                imagesData.image.forEach((imageUrl, index) => {
+                    const pageDiv = document.createElement('div');
+                    pageDiv.style.width = '100%';
+                    
+                    const pageNumber = document.createElement('div');
+                    pageNumber.className = 'page-number';
+                    pageNumber.textContent = `Trang ${index + 1}/${imagesData.image.length}`;
+                    
+                    const img = document.createElement('img');
+                    img.className = 'page-image';
+                    img.src = imageUrl;
+                    img.alt = `Page ${index + 1}`;
+                    img.loading = 'lazy';
+                    img.onerror = function() {
+                        this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23ddd" width="400" height="300"/><text x="50%" y="50%" fill="%23999" text-anchor="middle" font-size="16">Không tải được ảnh</text></svg>';
+                    };
+                    
+                    pageDiv.appendChild(pageNumber);
+                    pageDiv.appendChild(img);
+                    container.appendChild(pageDiv);
+                });
+                
+                document.getElementById('readerLoading').style.display = 'none';
+                
+                // Load comments
+                loadReaderComments();
+                
+            } catch (error) {
+                console.error('Error loading reader:', error);
+                document.getElementById('readerLoading').innerHTML = '<div class="error-message">Không thể tải chapter. Vui lòng thử lại sau.</div>';
+            }
+        }
+
+        async function loadReaderComments() {
+            try {
+                const response = await fetch(`${API_BASE}/comment_list?album=${state.currentAlbumId}&chapter=${state.currentChapterId}&comment=0&limit=20&page=1&sort=suggest`);
+                const data = await response.json();
+                
+                const container = document.getElementById('readerComments');
+                container.innerHTML = '';
+                
+                if (!data.data || data.data.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">Chưa có bình luận cho chapter này</p>';
+                    return;
+                }
+                
+                data.data.forEach(comment => {
+                    const div = document.createElement('div');
+                    div.className = 'comment';
+                    div.innerHTML = `
+                        <div class="comment-header">
+                            <div class="comment-avatar">${comment.info.name[0]}</div>
+                            <div style="flex: 1;">
+                                <div class="comment-user">${comment.info.name} <span style="color: #999; font-weight: normal;">• Lv.${comment.info.level}</span></div>
+                                <div class="comment-date">${formatDate(comment.date)}</div>
+                            </div>
+                        </div>
+                        <div class="comment-text">${escapeHtml(comment.data.text)}</div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        }
+
         function previousChapter() {
-            if (currentChapterIndex > 0) {
-                currentChapterIndex--;
-                loadChapter(chapters[currentChapterIndex].id_chapter);
+            if (state.currentChapterIndex > 0) {
+                state.currentChapterIndex--;
+                showReaderPage(state.currentAlbumId, state.chapters[state.currentChapterIndex].id_chapter);
                 scrollToTop();
             }
         }
 
         function nextChapter() {
-            if (currentChapterIndex < chapters.length - 1) {
-                currentChapterIndex++;
-                loadChapter(chapters[currentChapterIndex].id_chapter);
+            if (state.currentChapterIndex < state.chapters.length - 1) {
+                state.currentChapterIndex++;
+                showReaderPage(state.currentAlbumId, state.chapters[state.currentChapterIndex].id_chapter);
                 scrollToTop();
             }
         }
 
-        function changeChapter() {
-            const select = document.getElementById('chapterSelect');
-            currentChapterIndex = parseInt(select.value);
-            loadChapter(chapters[currentChapterIndex].id_chapter);
+        function changeReaderChapter() {
+            const select = document.getElementById('readerChapterSelect');
+            state.currentChapterIndex = parseInt(select.value);
+            showReaderPage(state.currentAlbumId, state.chapters[state.currentChapterIndex].id_chapter);
             scrollToTop();
         }
 
-        function updateNavigationButtons() {
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            
-            prevBtn.disabled = currentChapterIndex === 0;
-            nextBtn.disabled = currentChapterIndex === chapters.length - 1;
+        // ==================== UTILITY FUNCTIONS ====================
+        function getAvatarUrl(avatar) {
+            if (!avatar) return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400"><rect fill="%23ddd" width="300" height="400"/></svg>';
+            return avatar.includes('http') ? avatar : `${AVATAR_BASE}${avatar}`;
         }
 
-        function goBack() {
-            window.history.back();
-        }
-
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        // Utility functions
-        function showLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
-            document.getElementById('imagesContainer').style.display = show ? 'none' : 'flex';
-        }
-
-        function showError(message) {
-            const container = document.getElementById('imagesContainer');
-            container.innerHTML = `<div class="error-message">${message}</div>`;
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num;
         }
 
         function formatDate(dateString) {
@@ -654,26 +1659,11 @@
             return div.innerHTML;
         }
 
-        // Scroll to top button
-        window.addEventListener('scroll', function() {
-            const scrollTopBtn = document.getElementById('scrollTopBtn');
-            if (window.pageYOffset > 300) {
-                scrollTopBtn.classList.add('show');
-            } else {
-                scrollTopBtn.classList.remove('show');
-            }
-        });
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
-        // Keyboard navigation
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowLeft') {
-                previousChapter();
-            } else if (e.key === 'ArrowRight') {
-                nextChapter();
-            }
-        });
-
-        // Start
+        // ==================== START APPLICATION ====================
         init();
     </script>
 </body>
