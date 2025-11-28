@@ -286,6 +286,16 @@
             border: 1px solid rgba(234, 67, 53, 0.3);
         }
 
+        .result.leaked {
+            background: rgba(255, 152, 0, 0.15);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+
+        .result.leaked .result-icon {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+        }
+
         .result-header {
             display: flex;
             align-items: center;
@@ -587,8 +597,8 @@
 
         .bulk-stats {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
             margin-bottom: 15px;
         }
 
@@ -607,6 +617,7 @@
 
         .stat-value.valid { color: #34a853; }
         .stat-value.invalid { color: #ea4335; }
+        .stat-value.leaked { color: #ff9800; }
         .stat-value.total { color: #4285f4; }
 
         .stat-label {
@@ -676,6 +687,10 @@
             border-left: 3px solid #ea4335;
         }
 
+        .result-item.leaked {
+            border-left: 3px solid #ff9800;
+        }
+
         .result-item.checking {
             border-left: 3px solid #fbbc04;
         }
@@ -698,6 +713,11 @@
         .result-item.invalid .result-status {
             background: rgba(234, 67, 53, 0.2);
             color: #ea4335;
+        }
+
+        .result-item.leaked .result-status {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
         }
 
         .result-item.checking .result-status {
@@ -754,12 +774,16 @@
 
         @media (max-width: 480px) {
             .bulk-stats {
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(2, 1fr);
                 gap: 8px;
             }
 
             .stat-value {
-                font-size: 20px;
+                font-size: 18px;
+            }
+
+            .stat-card {
+                padding: 12px;
             }
 
             .bulk-actions {
@@ -969,6 +993,8 @@
 
                 if (response.ok && data.models) {
                     showSuccess(data.models);
+                } else if (data.error?.message?.toLowerCase().includes('leaked')) {
+                    showLeaked(data.error.message);
                 } else {
                     const errorMsg = data.error?.message || 'API Key không hợp lệ';
                     showError(errorMsg);
@@ -1059,8 +1085,45 @@
                 </div>
             `;
 
-            result.classList.remove('success');
+            result.classList.remove('success', 'leaked');
             result.classList.add('error', 'show');
+        }
+
+        function showLeaked(message) {
+            const result = document.getElementById('result');
+            const resultIcon = document.getElementById('resultIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultContent = document.getElementById('resultContent');
+
+            resultIcon.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            `;
+            resultTitle.textContent = '⚠️ API Key bị lộ!';
+
+            resultContent.innerHTML = `
+                <p class="error-message">${message}</p>
+                <div class="result-details" style="margin-top: 15px;">
+                    <div class="detail-item">
+                        <span class="detail-label">Trạng thái</span>
+                        <span class="detail-value" style="color: #ff9800;">LEAKED - Đã bị vô hiệu hóa</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Nguyên nhân</span>
+                        <span class="detail-value">Key đã bị phát hiện công khai trên internet</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Khắc phục</span>
+                        <span class="detail-value">Xóa key này và tạo key mới tại Google AI Studio</span>
+                    </div>
+                </div>
+            `;
+
+            result.classList.remove('success', 'error');
+            result.classList.add('leaked', 'show');
         }
 
         // Allow Enter key to submit
@@ -1143,16 +1206,19 @@
                             m.name.includes('gemini') && 
                             m.supportedGenerationMethods?.includes('generateContent')
                         );
-                        bulkResults.push({ key, valid: true, models: geminiModels.length });
-                        updateResultItem(i, key, true, `${geminiModels.length} models`, showOnlyValid);
+                        bulkResults.push({ key, status: 'valid', models: geminiModels.length });
+                        updateResultItem(i, key, 'valid', `${geminiModels.length} models`, showOnlyValid);
+                    } else if (data.error?.message?.toLowerCase().includes('leaked')) {
+                        bulkResults.push({ key, status: 'leaked', error: 'Key bị lộ' });
+                        updateResultItem(i, key, 'leaked', '⚠️ LEAKED', showOnlyValid);
                     } else {
                         const error = data.error?.message || 'Invalid';
-                        bulkResults.push({ key, valid: false, error });
-                        updateResultItem(i, key, false, error.substring(0, 30), showOnlyValid);
+                        bulkResults.push({ key, status: 'invalid', error });
+                        updateResultItem(i, key, 'invalid', error.substring(0, 30), showOnlyValid);
                     }
                 } catch (error) {
-                    bulkResults.push({ key, valid: false, error: error.message });
-                    updateResultItem(i, key, false, 'Network error', showOnlyValid);
+                    bulkResults.push({ key, status: 'invalid', error: error.message });
+                    updateResultItem(i, key, 'invalid', 'Network error', showOnlyValid);
                 }
 
                 // Small delay to avoid rate limiting
@@ -1193,31 +1259,37 @@
             return key.substring(0, 8) + '...' + key.substring(key.length - 4);
         }
 
-        function updateResultItem(index, key, valid, info, showOnlyValid) {
+        function updateResultItem(index, key, status, info, showOnlyValid) {
             const item = document.getElementById(`result-${index}`);
             if (!item) return;
 
-            if (showOnlyValid && !valid) {
+            if (showOnlyValid && status !== 'valid') {
                 item.style.display = 'none';
                 return;
             }
 
-            item.className = `result-item ${valid ? 'valid' : 'invalid'}`;
+            item.className = `result-item ${status}`;
+            
+            let icon = '';
+            if (status === 'valid') {
+                icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+            } else if (status === 'leaked') {
+                icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+            } else {
+                icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+            }
+
             item.innerHTML = `
-                <div class="result-status">
-                    ${valid 
-                        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
-                        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-                    }
-                </div>
+                <div class="result-status">${icon}</div>
                 <span class="result-key">${maskKey(key)}</span>
                 <span class="result-info">${info}</span>
             `;
         }
 
         function updateBulkStats() {
-            const validCount = bulkResults.filter(r => r.valid).length;
-            const invalidCount = bulkResults.filter(r => !r.valid).length;
+            const validCount = bulkResults.filter(r => r.status === 'valid').length;
+            const leakedCount = bulkResults.filter(r => r.status === 'leaked').length;
+            const invalidCount = bulkResults.filter(r => r.status === 'invalid').length;
             const total = bulkResults.length;
 
             document.getElementById('bulkStats').innerHTML = `
@@ -1226,18 +1298,22 @@
                     <div class="stat-label">Hợp lệ</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-value leaked">${leakedCount}</div>
+                    <div class="stat-label">Bị lộ</div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-value invalid">${invalidCount}</div>
-                    <div class="stat-label">Không hợp lệ</div>
+                    <div class="stat-label">Lỗi</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value total">${total}</div>
-                    <div class="stat-label">Tổng cộng</div>
+                    <div class="stat-label">Tổng</div>
                 </div>
             `;
         }
 
         function copyValidKeys() {
-            const validKeys = bulkResults.filter(r => r.valid).map(r => r.key);
+            const validKeys = bulkResults.filter(r => r.status === 'valid').map(r => r.key);
             if (validKeys.length === 0) {
                 showToast('Không có key hợp lệ để copy', 'error');
                 return;
@@ -1251,7 +1327,7 @@
         }
 
         function exportResults() {
-            const validKeys = bulkResults.filter(r => r.valid).map(r => r.key);
+            const validKeys = bulkResults.filter(r => r.status === 'valid').map(r => r.key);
             if (validKeys.length === 0) {
                 showToast('Không có key hợp lệ để xuất', 'error');
                 return;
