@@ -799,6 +799,273 @@
                 font-size: 13px;
             }
         }
+
+        /* Select dropdown */
+        .select-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .select-wrapper select {
+            flex: 1;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+        }
+
+        .select-wrapper select:focus {
+            border-color: #4285f4;
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .select-wrapper select option {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 10px;
+        }
+
+        .refresh-btn {
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #4285f4;
+            border-color: #4285f4;
+        }
+
+        .refresh-btn.loading svg {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Chat container */
+        .chat-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .chat-welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            gap: 15px;
+        }
+
+        .welcome-icon {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            animation: messageIn 0.3s ease;
+        }
+
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #4285f4, #34a853);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message.assistant {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-message.error {
+            align-self: flex-start;
+            background: rgba(234, 67, 53, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(234, 67, 53, 0.3);
+        }
+
+        .chat-message.typing {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: typingBounce 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-input-area textarea {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            resize: none;
+            outline: none;
+            min-height: 44px;
+            max-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input-area textarea:focus {
+            border-color: #4285f4;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .chat-input-area textarea::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .send-btn {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #4285f4, #34a853);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(66, 133, 244, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #fff;
+        }
+
+        /* Message metadata */
+        .message-meta {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 6px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-message.user .message-meta {
+            justify-content: flex-end;
+            color: rgba(255, 255, 255, 0.7);
+        }
     </style>
 </head>
 <body>
@@ -841,6 +1108,12 @@
                         <line x1="3" y1="18" x2="3.01" y2="18"/>
                     </svg>
                     Hàng loạt
+                </button>
+                <button class="tab" data-tab="chat" onclick="switchTab('chat')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Chat Test
                 </button>
             </div>
 
@@ -949,6 +1222,77 @@
                     </div>
                     <div class="results-list" id="resultsList"></div>
                 </div>
+            </div>
+
+            <!-- Chat Test Tab -->
+            <div class="tab-content" id="chat-tab">
+                <div class="input-group">
+                    <label for="chatApiKey">API Key</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            id="chatApiKey" 
+                            placeholder="Nhập Gemini API Key..."
+                            autocomplete="off"
+                        >
+                        <button class="toggle-visibility" type="button" onclick="toggleChatKeyVisibility()">
+                            <svg id="chatEyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="modelSelect">Chọn Model</label>
+                    <div class="select-wrapper">
+                        <select id="modelSelect">
+                            <option value="">-- Nhập API Key để load models --</option>
+                        </select>
+                        <button class="refresh-btn" onclick="loadModels()" title="Refresh models">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chat-container" id="chatContainer">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-welcome">
+                            <div class="welcome-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                            </div>
+                            <p>Nhập API Key và chọn model để bắt đầu chat test</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <textarea 
+                            id="chatInput" 
+                            placeholder="Nhập tin nhắn để test API..."
+                            rows="1"
+                            onkeydown="handleChatKeydown(event)"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"/>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="btn btn-outline" onclick="clearChat()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    Xóa lịch sử chat
+                </button>
             </div>
 
             <div class="footer">
@@ -1365,6 +1709,303 @@
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+
+        // ==================== CHAT FUNCTIONALITY ====================
+        
+        let chatHistory = [];
+        let isChatKeyVisible = false;
+        let availableModels = [];
+
+        function toggleChatKeyVisibility() {
+            const input = document.getElementById('chatApiKey');
+            const eyeIcon = document.getElementById('chatEyeIcon');
+            isChatKeyVisible = !isChatKeyVisible;
+            
+            input.type = isChatKeyVisible ? 'text' : 'password';
+            eyeIcon.innerHTML = isChatKeyVisible 
+                ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+                : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+        }
+
+        // Auto load models when API key is entered
+        document.getElementById('chatApiKey').addEventListener('blur', function() {
+            if (this.value.trim()) {
+                loadModels();
+            }
+        });
+
+        document.getElementById('chatApiKey').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadModels();
+            }
+        });
+
+        async function loadModels() {
+            const apiKey = document.getElementById('chatApiKey').value.trim();
+            const select = document.getElementById('modelSelect');
+            const refreshBtn = document.querySelector('.refresh-btn');
+
+            if (!apiKey) {
+                showToast('Vui lòng nhập API Key', 'error');
+                return;
+            }
+
+            refreshBtn.classList.add('loading');
+            select.innerHTML = '<option value="">Đang tải models...</option>';
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                const data = await response.json();
+
+                if (response.ok && data.models) {
+                    // Filter models that support generateContent
+                    availableModels = data.models.filter(m => 
+                        m.supportedGenerationMethods?.includes('generateContent')
+                    );
+
+                    select.innerHTML = '<option value="">-- Chọn model --</option>';
+                    
+                    // Group models
+                    const geminiPro = availableModels.filter(m => m.name.includes('gemini-1.5-pro') || m.name.includes('gemini-pro'));
+                    const geminiFlash = availableModels.filter(m => m.name.includes('flash'));
+                    const gemini2 = availableModels.filter(m => m.name.includes('gemini-2'));
+                    const others = availableModels.filter(m => 
+                        !m.name.includes('gemini-1.5-pro') && 
+                        !m.name.includes('gemini-pro') && 
+                        !m.name.includes('flash') &&
+                        !m.name.includes('gemini-2')
+                    );
+
+                    function addOptions(models, groupLabel) {
+                        if (models.length > 0) {
+                            const optgroup = document.createElement('optgroup');
+                            optgroup.label = groupLabel;
+                            models.forEach(m => {
+                                const option = document.createElement('option');
+                                option.value = m.name;
+                                option.textContent = m.displayName || m.name.replace('models/', '');
+                                optgroup.appendChild(option);
+                            });
+                            select.appendChild(optgroup);
+                        }
+                    }
+
+                    addOptions(gemini2, '🚀 Gemini 2.x');
+                    addOptions(geminiFlash, '⚡ Gemini Flash');
+                    addOptions(geminiPro, '💎 Gemini Pro');
+                    addOptions(others, '📦 Others');
+
+                    showToast(`Đã tải ${availableModels.length} models!`);
+                } else if (data.error?.message?.toLowerCase().includes('leaked')) {
+                    select.innerHTML = '<option value="">⚠️ API Key bị lộ!</option>';
+                    showToast('API Key đã bị lộ và vô hiệu hóa', 'error');
+                } else {
+                    select.innerHTML = '<option value="">❌ API Key không hợp lệ</option>';
+                    showToast(data.error?.message || 'API Key không hợp lệ', 'error');
+                }
+            } catch (error) {
+                select.innerHTML = '<option value="">❌ Lỗi kết nối</option>';
+                showToast('Lỗi kết nối: ' + error.message, 'error');
+            } finally {
+                refreshBtn.classList.remove('loading');
+            }
+        }
+
+        function handleChatKeydown(event) {
+            const textarea = event.target;
+            
+            // Auto resize
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+            
+            // Send on Enter (without Shift)
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const apiKey = document.getElementById('chatApiKey').value.trim();
+            const model = document.getElementById('modelSelect').value;
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            const messagesContainer = document.getElementById('chatMessages');
+            const sendBtn = document.getElementById('sendBtn');
+
+            if (!apiKey) {
+                showToast('Vui lòng nhập API Key', 'error');
+                return;
+            }
+
+            if (!model) {
+                showToast('Vui lòng chọn model', 'error');
+                return;
+            }
+
+            if (!message) {
+                return;
+            }
+
+            // Clear welcome message if first message
+            const welcome = messagesContainer.querySelector('.chat-welcome');
+            if (welcome) {
+                welcome.remove();
+            }
+
+            // Add user message
+            const userMsgEl = document.createElement('div');
+            userMsgEl.className = 'chat-message user';
+            userMsgEl.innerHTML = `
+                ${escapeHtml(message)}
+                <div class="message-meta">
+                    <span>${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+            `;
+            messagesContainer.appendChild(userMsgEl);
+
+            // Clear input
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Add to history
+            chatHistory.push({ role: 'user', parts: [{ text: message }] });
+
+            // Add typing indicator
+            const typingEl = document.createElement('div');
+            typingEl.className = 'chat-message typing';
+            typingEl.id = 'typing-indicator';
+            typingEl.innerHTML = `
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            messagesContainer.appendChild(typingEl);
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Disable send button
+            sendBtn.disabled = true;
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: chatHistory,
+                            generationConfig: {
+                                temperature: 0.7,
+                                maxOutputTokens: 2048,
+                            }
+                        })
+                    }
+                );
+
+                const data = await response.json();
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+
+                // Remove typing indicator
+                document.getElementById('typing-indicator')?.remove();
+
+                if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    const assistantMessage = data.candidates[0].content.parts[0].text;
+                    
+                    // Add to history
+                    chatHistory.push({ role: 'model', parts: [{ text: assistantMessage }] });
+
+                    // Display assistant message
+                    const assistantMsgEl = document.createElement('div');
+                    assistantMsgEl.className = 'chat-message assistant';
+                    assistantMsgEl.innerHTML = `
+                        ${formatMessage(assistantMessage)}
+                        <div class="message-meta">
+                            <span>${model.replace('models/', '')}</span>
+                            <span>${elapsed}s</span>
+                        </div>
+                    `;
+                    messagesContainer.appendChild(assistantMsgEl);
+                } else {
+                    let errorMsg = 'Không thể tạo phản hồi';
+                    if (data.error?.message?.toLowerCase().includes('leaked')) {
+                        errorMsg = '⚠️ API Key đã bị lộ và vô hiệu hóa!';
+                    } else if (data.error?.message) {
+                        errorMsg = data.error.message;
+                    } else if (data.candidates?.[0]?.finishReason === 'SAFETY') {
+                        errorMsg = '⚠️ Nội dung bị chặn bởi bộ lọc an toàn';
+                    }
+
+                    const errorMsgEl = document.createElement('div');
+                    errorMsgEl.className = 'chat-message error';
+                    errorMsgEl.textContent = errorMsg;
+                    messagesContainer.appendChild(errorMsgEl);
+
+                    // Remove last user message from history on error
+                    chatHistory.pop();
+                }
+            } catch (error) {
+                // Remove typing indicator
+                document.getElementById('typing-indicator')?.remove();
+
+                const errorMsgEl = document.createElement('div');
+                errorMsgEl.className = 'chat-message error';
+                errorMsgEl.textContent = 'Lỗi kết nối: ' + error.message;
+                messagesContainer.appendChild(errorMsgEl);
+
+                // Remove last user message from history on error
+                chatHistory.pop();
+            } finally {
+                sendBtn.disabled = false;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatMessage(text) {
+            // Basic markdown-like formatting
+            let formatted = escapeHtml(text);
+            
+            // Code blocks
+            formatted = formatted.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+            
+            // Inline code
+            formatted = formatted.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">$1</code>');
+            
+            // Bold
+            formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            
+            // Line breaks
+            formatted = formatted.replace(/\n/g, '<br>');
+            
+            return formatted;
+        }
+
+        function clearChat() {
+            chatHistory = [];
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = `
+                <div class="chat-welcome">
+                    <div class="welcome-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </div>
+                    <p>Nhập API Key và chọn model để bắt đầu chat test</p>
+                </div>
+            `;
+            showToast('Đã xóa lịch sử chat');
         }
     </script>
 </body>
