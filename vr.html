@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VirusTotal File Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .api-key-section {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .upload-area {
+            border: 3px dashed #d0d0d0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8e8ff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result h3 {
+            margin-bottom: 10px;
+        }
+
+        .result a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .result a:hover {
+            text-decoration: underline;
+        }
+
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ VirusTotal Scanner</h1>
+        <p class="subtitle">Quét virus và malware trong file của bạn</p>
+
+        <div class="api-key-section">
+            <label for="apiKey">API Key:</label>
+            <input type="text" id="apiKey" placeholder="Nhập API key của bạn từ VirusTotal">
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <p><strong>Kéo thả file vào đây</strong></p>
+            <p style="color: #888; font-size: 14px; margin-top: 8px;">hoặc nhấp để chọn file (tối đa 32MB)</p>
+            <input type="file" id="fileInput">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <strong>File đã chọn:</strong> <span id="fileName"></span><br>
+            <strong>Kích thước:</strong> <span id="fileSize"></span>
+        </div>
+
+        <div class="api-key-section">
+            <label for="zipPassword">Mật khẩu ZIP (nếu có):</label>
+            <input type="password" id="zipPassword" placeholder="Để trống nếu file không được bảo vệ">
+        </div>
+
+        <button id="scanBtn" onclick="scanFile()">Quét File</button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Đang tải file lên và quét...</p>
+        </div>
+
+        <div class="result" id="result"></div>
+
+        <div class="note">
+            <strong>⚠️ Lưu ý:</strong> Bạn cần có API key từ VirusTotal để sử dụng. 
+            Đăng ký miễn phí tại <a href="https://www.virustotal.com/" target="_blank">virustotal.com</a>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // File selected
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file) return;
+
+            const maxSize = 32 * 1024 * 1024; // 32MB
+            if (file.size > maxSize) {
+                showResult('error', 'File quá lớn! Vui lòng chọn file nhỏ hơn 32MB.');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.add('show');
+            result.style.display = 'none';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        async function scanFile() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const zipPassword = document.getElementById('zipPassword').value.trim();
+
+            if (!apiKey) {
+                showResult('error', 'Vui lòng nhập API key!');
+                return;
+            }
+
+            if (!selectedFile) {
+                showResult('error', 'Vui lòng chọn file để quét!');
+                return;
+            }
+
+            loading.classList.add('show');
+            result.style.display = 'none';
+            document.getElementById('scanBtn').disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                if (zipPassword) {
+                    formData.append('password', zipPassword);
+                }
+
+                const response = await fetch('https://www.virustotal.com/api/v3/files', {
+                    method: 'POST',
+                    headers: {
+                        'x-apikey': apiKey
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const analysisId = data.data.id;
+                    const analysisUrl = data.data.links.self;
+                    
+                    showResult('success', `
+                        <h3>✅ File đã được tải lên thành công!</h3>
+                        <p><strong>Analysis ID:</strong> ${analysisId}</p>
+                        <p><strong>File:</strong> ${selectedFile.name}</p>
+                        <p style="margin-top: 15px;">
+                            <a href="https://www.virustotal.com/gui/file-analysis/${analysisId}" target="_blank">
+                                🔍 Xem kết quả chi tiết trên VirusTotal
+                            </a>
+                        </p>
+                        <p style="margin-top: 10px; font-size: 13px; color: #666;">
+                            Quá trình quét có thể mất vài phút. Nhấp vào link trên để theo dõi kết quả.
+                        </p>
+                    `);
+                } else {
+                    throw new Error(data.error?.message || 'Có lỗi xảy ra khi quét file');
+                }
+            } catch (error) {
+                showResult('error', `
+                    <h3>❌ Lỗi:</h3>
+                    <p>${error.message}</p>
+                    <p style="margin-top: 10px; font-size: 13px;">
+                        Vui lòng kiểm tra lại API key và kết nối internet.
+                    </p>
+                `);
+            } finally {
+                loading.classList.remove('show');
+                document.getElementById('scanBtn').disabled = false;
+            }
+        }
+
+        function showResult(type, message) {
+            result.className = 'result show ' + type;
+            result.innerHTML = message;
+        }
+    </script>
+</body>
+</html>
